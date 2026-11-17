@@ -14,11 +14,11 @@ Sets what each number key on the remote opens when it is held: an installed app,
 
 ![Remote keys as tiles in streaming buttons, voice assistant buttons, color keys and other keys, each showing what the key does, with buttons on remotes sold elsewhere folded at the end](../screenshots/apps-remote-keys.png)
 
-Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Voice assistant buttons**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
+Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Voice assistant buttons**, **Channel keys**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
 
 On webOS 11, **Ivi**, **Okko**, **Kinopoisk** and **LG Shop** are also offered under Streaming buttons when LG enables their assignments. They can open an app or input, do nothing, or return to **As LG has it**. A listed button may be absent from the physical remote.
 
-Core keys (**Home**, **Back**, volume, mute, channel, and power) are reserved and cannot be reassigned. The microphone button can be reassigned; setting it to another action overrides both press and hold, replacing LG's voice control until returned to **As LG has it**.
+Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot be reassigned. **Channel up** and **Channel down** can be reassigned where the TV's key filters name them; a channel key that is set no longer changes channel, so **As LG has it** brings that back. The microphone button can be reassigned; setting it to another action overrides both press and hold, replacing LG's voice control until returned to **As LG has it**.
 
 ## Available actions
 

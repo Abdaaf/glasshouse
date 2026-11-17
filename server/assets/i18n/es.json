@@ -1,4 +1,5 @@
 {
+ "apps.remoteKeys.channel": {"text": "Teclas de canal", "from": "Channel keys"},
  "pic.export": {"text": "Exportar JSON", "from": "Export JSON"},
  "pic.exportDesc": {"text": "Descarga los ajustes de imagen actuales como JSON sin cambiarlos. Este archivo no se puede restaurar.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
  "pic.exportTitle": {"text": "Exportar los ajustes actuales", "from": "Export current settings"},

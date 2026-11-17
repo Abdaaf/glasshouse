@@ -221,6 +221,7 @@
  "apps.remoteKeys.asLg": {"text": "Ahogy az LG beállította", "from": "As LG has it"},
  "apps.remoteKeys.assistant": {"text": "Hangsegédgombok", "from": "Voice assistant buttons"},
  "apps.remoteKeys.blocksAlexa": {"text": "Ennek a gombnak a beállítása megakadályozza az Alexa megnyitását, amíg vissza nem állítják az LG szerinti működésre. Az Amazon ettől még néhány másodpercig mutatja, hogy az Alexa töltődik.", "from": "Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds."},
+ "apps.remoteKeys.channel": {"text": "Csatornagombok", "from": "Channel keys"},
  "apps.remoteKeys.close": {"text": "Bezárás", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Színes gombok", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "{n} módosítva", "from": "{n} changed"},

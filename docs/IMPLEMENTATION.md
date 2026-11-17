@@ -935,9 +935,11 @@ is named, since webOS 4's filters only match `WebOS.Key_webOS_Yellow` and
 `WebOS.Key_webOS_Blue` and pass Red and Green straight to the foreground app.
 The compositor's enum knows more names than a given remote sends,
 and a case on an unknown symbol would never match. Home and Back are not
-offered, since the dashboard's own Home screen changes rely on them; volume,
-mute, channel and power are handled by the microcontroller before any filter
-sees them, so there is nothing to change.
+offered, since the dashboard's own Home screen changes rely on them; volume
+and power are handled by the microcontroller before any filter sees them, so
+there is nothing to change. Channel up and down are offered where the filters
+name `WebOS.Key_webOS_ChannelUp` and `ChannelDown`; a key that is set is
+accepted by the filter, so LG's channel change no longer happens for it.
 
 The compositor reloads only on a change of the key's value: configd says
 nothing to a subscriber when the same list is written again. When an update

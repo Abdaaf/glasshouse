@@ -221,6 +221,7 @@
  "apps.remoteKeys.asLg": {"text": "Как задано в LG", "from": "As LG has it"},
  "apps.remoteKeys.assistant": {"text": "Кнопки голосового помощника", "from": "Voice assistant buttons"},
  "apps.remoteKeys.blocksAlexa": {"text": "Пока для этой кнопки задано другое, Alexa не открывается, до возврата к значению «Как задано в LG». Amazon при этом несколько секунд показывает, что Alexa загружается.", "from": "Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds."},
+ "apps.remoteKeys.channel": {"text": "Кнопки каналов", "from": "Channel keys"},
  "apps.remoteKeys.close": {"text": "Закрыть", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Цветные кнопки", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "Изменено: {n}", "from": "{n} changed"},

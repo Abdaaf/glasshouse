@@ -3756,3 +3756,11 @@ or merely cached overlay does not exempt a stopped Home view.
 With the correction installed, navigating Guide for at least 30 s kept it
 open. Successive watchdog checks logged that the view was behind
 `com.webos.app.livemenu`, rather than restoring LG's Home.
+
+## Channel and mute keys reach the JavaScript key filter (OLED48C56LB, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80, MR26GA remote), a probe in
+Glasshouse's own filter in `/usr/lib/qt5/qml/KeyFilters/` received CH+, CH-
+and mute, but not volume up or down. LG's `appLaunch.js` names
+`WebOS.Key_webOS_ChannelUp` and `WebOS.Key_webOS_ChannelDown`, which is how
+Glasshouse offers the channel keys.

@@ -227,6 +227,7 @@
  "apps.remoteKeys.asLg": {"text": "على وضع LG الافتراضي", "from": "As LG has it"},
  "apps.remoteKeys.assistant": {"text": "أزرار المساعد الصوتي", "from": "Voice assistant buttons"},
  "apps.remoteKeys.blocksAlexa": {"text": "تخصيص هذا الزر يمنع فتح Alexa حتى تعيده إلى وضع LG الافتراضي. ستستمر شاشة تحميل Alexa بالظهور لثوانٍ عند الضغط عليه.", "from": "Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds."},
+ "apps.remoteKeys.channel": {"text": "أزرار القنوات", "from": "Channel keys"},
  "apps.remoteKeys.close": {"text": "إغلاق", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "الأزرار الملونة", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "تم تعديل {n}", "from": "{n} changed"},

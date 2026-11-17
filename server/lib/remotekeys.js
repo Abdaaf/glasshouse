@@ -36,9 +36,13 @@
  *
  * A key is offered only where this TV's own filter files name it, since LG's
  * key names differ by model and region (a C5 has a Disney+ button, a CX does
- * not). Home, Back, volume, mute, channel and power are not offered: the first
- * two are what the dashboard's own controls depend on, and the rest the
- * microcontroller handles before any filter sees them.
+ * not). Home, Back, volume, mute and power are not offered: the first two are
+ * what the dashboard's own controls depend on, and the rest the
+ * microcontroller handles before any filter sees them (volume up and down
+ * never reached a probe in this filter on an OLED48C56LB, webOS 10.3.0; CH+,
+ * CH- and mute did, and LG's appLaunch.js names the channel keys, so those two
+ * are offered). A channel key that is set no longer changes channel: the filter
+ * accepts it, so only As LG has it keeps LG's channel change.
  *
  * Home: earlier builds of Glasshouse Home pointed it at their own app, kept
  * beside the keys as `home`; lib/home.js clears it. Glasshouse Home now runs
@@ -234,6 +238,8 @@ var KEYS = [
   { key: 'googleassistant', symbol: 'WebOS.Key_webOS_GoogleVoice', title: 'Google Assistant' },
   { key: 'voice', symbol: 'WebOS.Key_webOS_Voice', title: 'Microphone', replacesVoice: true },
   { key: 'apps', symbol: 'WebOS.Key_webOS_Apps', title: 'Apps' },
+  { key: 'channelup', symbol: 'WebOS.Key_webOS_ChannelUp', title: 'Channel up', filterOnly: true },
+  { key: 'channeldown', symbol: 'WebOS.Key_webOS_ChannelDown', title: 'Channel down', filterOnly: true },
   // Only webOS 11's native filters let these be changed (NATIVE_ACTIONS,
   // NATIVE_SETTINGS); the JavaScript filter leaves them out, so its file is
   // unchanged. Home Hub is the MR25's house-in-a-circle button (IR 1031); the
@@ -882,7 +888,7 @@ function nativeKeys(tv, lg) {
       if (refusedBlocks[appId] && !lg.blocks[appId]) return false;
       return !!((tv.apps && tv.apps[appId]) || lg.blocks[appId]);
     }
-    if (k.nativeOnly) return false;
+    if (k.nativeOnly || k.filterOnly) return false;
     var entry = lg.mapping[k.key] || mappingEntry(tv.list, k.key);
     return !!(entry && typeof entry === 'object' && entry.isActive !== false);
   });

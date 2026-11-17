@@ -238,6 +238,7 @@
  "apps.remoteKeys.asLg": {"text": "Como a LG deixou", "from": "As LG has it"},
  "apps.remoteKeys.assistant": {"text": "Botões do assistente de voz", "from": "Voice assistant buttons"},
  "apps.remoteKeys.blocksAlexa": {"text": "Definir este botão impede a Alexa de abrir até ele voltar a Como a LG deixou. A Amazon ainda mostra por alguns segundos que a Alexa está carregando.", "from": "Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds."},
+ "apps.remoteKeys.channel": {"text": "Botões de canal", "from": "Channel keys"},
  "apps.remoteKeys.close": {"text": "Fechar", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Botões coloridos", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "{n} alterados", "from": "{n} changed"},
