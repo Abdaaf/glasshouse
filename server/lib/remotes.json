@@ -1,0 +1,107 @@
+{
+  "remotes": [
+    {
+      "id": "MR20",
+      "title": "Magic Remote MR20",
+      "names": ["LGE MR20"],
+      "nameEvidence": "documented",
+      "year": "2020",
+      "numberKeys": null,
+      "complete": false,
+      "image": null,
+      "keys": {
+        "movies": "documented"
+      },
+      "sources": [
+        "The Movies button on 2020 remotes: server/lib/remotekeys.js and docs/dashboard/remote.md",
+        "A pairing file reading Name = LGE MR20: test/test-telemetry.js"
+      ],
+      "notes": "Has no Stop key (docs/development/TV-RESEARCH.md)."
+    },
+    {
+      "id": "MR22GN",
+      "title": "Magic Remote MR22GN",
+      "names": ["LGE MR22GN"],
+      "nameEvidence": "measured",
+      "year": "2022",
+      "numberKeys": null,
+      "complete": false,
+      "image": null,
+      "keys": {
+        "voice": "measured",
+        "googleassistant": "measured"
+      },
+      "sources": [
+        "C2, webOS 9.2.2: the microphone and Google Assistant buttons (docs/HOME-ASSISTANT-REMOTE-BUTTONS.md)",
+        "Remote name read from a C2's pairing data: test/test-remotebattery.js"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "MR24",
+      "title": "Magic Remote MR24",
+      "names": ["LGE MR24", "LGE MR24N"],
+      "nameEvidence": "measured",
+      "year": "2024",
+      "numberKeys": null,
+      "complete": false,
+      "image": null,
+      "keys": {
+        "netflix": "documented",
+        "amazon": "documented"
+      },
+      "sources": [
+        "C4, webOS 10.3.1: the streaming buttons (docs/HOME-ASSISTANT-REMOTE-BUTTONS.md)",
+        "Remote names read from TVs: LGE MR24 (test/test-telemetry.js) and LGE MR24N (docs/development/TV-RESEARCH.md)"
+      ],
+      "notes": "LGE MR24N is a name TVs report; treating it as the same family as the MR24 is an assumption."
+    },
+    {
+      "id": "MR25GA",
+      "title": "Magic Remote MR25GA",
+      "names": ["LGE MR25GA"],
+      "nameEvidence": "measured",
+      "year": "2025",
+      "numberKeys": null,
+      "complete": false,
+      "image": null,
+      "keys": {
+        "netflix": "measured",
+        "amazon": "measured",
+        "alexa": "measured",
+        "ai": "measured",
+        "homehub": "measured",
+        "multikey": "measured",
+        "multikeyhold": "documented",
+        "guide": "measured",
+        "disneyplus": "assumed"
+      },
+      "sources": [
+        "C5, webOS 11.2.0: the presses lginput2 logs by name, KEY_HOMEDASHBOARD, KEY_MULTIKEY, KEY_GUIDE, KEY_VOICE (AI), KEY_ALEXAVOICE, KEY_NETFLIX and KEY_AMAZON (docs/development/TV-RESEARCH.md)",
+        "The Disney+ button is a C5 key in LG's filters; that this remote has it is not confirmed"
+      ],
+      "notes": "Also has a 123 button, which stays in the compositor and cannot be changed, and the Home key."
+    },
+    {
+      "id": "MR26GA",
+      "title": "Magic Remote MR26GA",
+      "names": ["LGE MR26GA"],
+      "nameEvidence": "assumed",
+      "year": null,
+      "numberKeys": false,
+      "complete": false,
+      "image": null,
+      "keys": {
+        "netflix": "measured",
+        "amazon": "measured",
+        "channelup": "measured",
+        "channeldown": "measured"
+      },
+      "sources": [
+        "OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of these keys read from the remote's input device, and CH+ and CH- received by the key filter",
+        "This remote has no number keys"
+      ],
+      "notes": "The name the TV reports for this remote has not been read yet; LGE MR26GA follows the others' pattern. The rest of its buttons are to be listed."
+    }
+  ]
+}

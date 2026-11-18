@@ -36,6 +36,8 @@ Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot 
 
 ## Remote models and regional buttons
 
+The [Remotes](../remotes.md) page lists the LG remotes Glasshouse knows and the keys each is known to have.
+
 The available keys reflect what the TV's software supports, not necessarily what is present on a specific physical remote. A Magic Remote lacks color, Guide, and Info keys, while a standard IR remote lacks dedicated streaming buttons, but the TV can receive both.
 
 The list names buttons supported by the TV's model generation (e.g. a C5 lists its Disney+ button while a CX does not; 2020 remotes add a Movies button, and recent Magic Remotes add Alexa and Google Assistant buttons).

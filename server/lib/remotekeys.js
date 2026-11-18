@@ -339,6 +339,13 @@ function mapFile() { return path.join(stateDir, 'remotekeys.json'); }
 function filterFile() { return path.join(stateDir, 'remotekeys-filter.js'); }
 function lgFile() { return path.join(stateDir, 'remotekeys-lg.json'); }
 
+// Every key that can be set, by name, with the title it has on the Remote tab: what the remote catalogue's key ids refer to.
+function keyTitles() {
+  var out = {};
+  KEYS.forEach(function (k) { out[k.key] = k.title; });
+  return out;
+}
+
 function keyByName(name) {
   for (var i = 0; i < KEYS.length; i++) if (KEYS[i].key === name) return KEYS[i];
   return null;
@@ -1842,6 +1849,7 @@ module.exports = {
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,
+  keyTitles: keyTitles,
   isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
