@@ -59,7 +59,7 @@ steps([
       assert.strictEqual(m.name, 'LGE MR26GA');
       assert.strictEqual(m.id, 'MR26GA');
       assert.strictEqual(m.title, 'Magic Remote MR26GA');
-      assert.strictEqual(m.image, 'generic.png');
+      assert.strictEqual(m.image, 'MR26GA.png', 'its own picture');
       assert.strictEqual(m.current, true);
       assert.deepEqual(m.sources, ['pairing']);
       console.log('  ✓ the paired remote is current and found in the catalogue');
