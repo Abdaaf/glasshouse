@@ -82,6 +82,7 @@ dismisses a Glasshouse screen saver, as movement of the Magic Remote does.
 | Change | Where | Undone by |
 | :----- | :---- | :-------- |
 | The server, its config and state | `/var/lib/tvweb` | Uninstalling |
+| Remotes seen | `/var/lib/tvweb/remotes-seen.json`: the names LG remotes reported (the paired remote's, and the `remote_type` of presses in `/var/log/messages`, read when the Remote tab asks) with the time each was last seen, at most 20, no addresses | Uninstalling |
 | Boot hook that starts the server | `/var/lib/webosbrew/init.d/50-tvweb`, a link into the app when installed from the Homebrew Channel | Uninstalling |
 | Boot log | `/var/lib/webosbrew/tvweb-boot.log`, kept under 32 KB | Uninstalling |
 | The server's own systemd scope | Where the TV has systemd, the server and its watchdog run in a transient scope, `tvweb-<pid>.scope` (`systemd-run --scope`), not in the cgroup of the LG service whose start-up started them, which ended them whenever it restarted | Stopping the server, which ends the scope; it does not outlive a restart |

@@ -129,6 +129,7 @@ var audioCapabilities = require('./lib/audio');
 var btAudio = require('./lib/btaudio');
 var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
+var remoteDetect = require('./lib/remotedetect');
 var logsModule = require('./lib/logs');
 var syslogForwarder = require('./lib/syslog');
 var ntpClient = require('./lib/ntp');
@@ -613,6 +614,7 @@ preload.init({ luna: luna, stateDir: __dirname });
 doh.init({});
 appDns.init({ luna: luna, stateDir: __dirname, doh: doh });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
+remoteDetect.init({ pairing: telemetry.remoteInfo, stateDir: __dirname });
 remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
@@ -1104,6 +1106,7 @@ routes.init({
   appDns: appDns,
   quickAccess: quickAccess,
   remoteKeys: remoteKeys,
+  remoteDetect: remoteDetect,
   homeScreen: homeScreen,
   home: glasshouseHome,
   homePicture: homePicture,
