@@ -941,7 +941,7 @@ step(function (next) {
   var known = { id: 'A', title: 'Remote A', complete: true, image: 'generic.png', keys: { netflix: 'measured', amazon: 'measured' } };
   var selected = [known];
   rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
-    selectedRemotes: function (cb) { process.nextTick(function () { cb(selected); }); } });
+    detectRemotes: function (cb) { process.nextTick(function () { cb({ auto: selected, detected: [] }); }); } });
   rk.getRemoteKeys(guard(function (r) {
     var off = r.keys.filter(function (k) { return k.offRemote; }).map(function (k) { return k.key; });
     assert.ok(off.length > 0 && off.indexOf('netflix') === -1 && off.indexOf('amazon') === -1, 'keys the remote lacks are marked, its own are not');
@@ -966,12 +966,66 @@ step(function (next) {
             selected = [];
             rk.getRemoteKeys(guard(function (none) {
               assert.ok(!none.keys.some(function (k) { return k.offRemote; }), 'nor does no remote');
-              rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir, selectedRemotes: function () { throw new Error('lookup failed'); } });
+              rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir, detectRemotes: function () { throw new Error('lookup failed'); } });
               rk.getRemoteKeys(guard(function (failed) {
                 assert.ok(failed.ok && !failed.keys.some(function (k) { return k.offRemote; }), 'a lookup that fails folds nothing');
                 rk.setRemoteKey('red', 'lg', '', guard(function () {
                   console.log('  ✓ keys on none of the remotes in use are marked where every remote is known, and never otherwise');
                   next();
+                }));
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// Which remotes the tab is for: automatic, all buttons, or ones chosen from the catalogue
+step(function (next) {
+  var detected = [{ name: 'LGE MR26GA', id: 'MR26GA', title: 'Magic Remote MR26GA', image: 'MR26GA.png', current: true }];
+  rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir,
+    detectRemotes: function (cb) { cb({ auto: [{ id: 'A', title: 'Remote A', complete: true, keys: { netflix: 'measured' } }], detected: detected }); } });
+  var file = path.join(stateDir, 'remotekeys.json');
+  rk.getRemoteKeys(guard(function (r) {
+    assert.strictEqual(r.remotes.mode, 'auto');
+    assert.strictEqual(r.remotes.folding, true, 'automatic follows what is in use');
+    assert.deepEqual(r.remotes.detected, detected, 'what was detected, for the page to say');
+    assert.deepEqual(r.remotes.catalogue.map(function (c) { return c.id; }), ['MR26GA'], 'what can be chosen');
+    rk.setRemoteSelection('all', [], guard(function (a) {
+      assert.ok(a.ok, a.error);
+      assert.ok(fs.existsSync(file), 'kept with the keys');
+      rk.getRemoteKeys(guard(function (all) {
+        assert.strictEqual(all.remotes.mode, 'all');
+        assert.strictEqual(all.remotes.folding, false, 'all buttons folds nothing');
+        assert.ok(!all.keys.some(function (k) { return k.offRemote; }));
+        rk.setRemoteSelection('pick', ['LGE MR26GA', 'MR26GA', 'MR99', 7], guard(function (p) {
+          assert.ok(p.ok, p.error);
+          rk.getRemoteKeys(guard(function (picked) {
+            assert.strictEqual(picked.remotes.mode, 'pick');
+            assert.deepEqual(picked.remotes.ids, ['MR26GA'], 'a name finds its remote, repeats and strangers are dropped');
+            assert.deepEqual(picked.remotes.selected.map(function (x) { return x.id; }), ['MR26GA']);
+            assert.strictEqual(picked.remotes.folding, false, 'the catalogue has no finished list for it yet');
+            // Refused: nothing known chosen, or no such mode
+            rk.setRemoteSelection('pick', ['MR99'], guard(function (bad) {
+              assert.strictEqual(bad.ok, false);
+              rk.setRemoteSelection('pick', [], guard(function (empty) {
+                assert.strictEqual(empty.ok, false);
+                rk.setRemoteSelection('some', [], guard(function (mode) {
+                  assert.strictEqual(mode.ok, false);
+                  // The choice survives changes to the keys
+                  rk.setRemoteKey('red', 'open', 'netflix', guard(function () {
+                    rk.setRemoteKey('red', 'lg', '', guard(function () {
+                      assert.strictEqual(JSON.parse(fs.readFileSync(file, 'utf8')).remotes.mode, 'pick', 'kept with every key as LG has it');
+                      rk.setRemoteSelection('auto', [], guard(function (back) {
+                        assert.ok(back.ok, back.error);
+                        assert.ok(!fs.existsSync(file), 'automatic is nothing kept, so no file where no key is set');
+                        console.log('  ✓ the remotes the tab is for are automatic, all buttons or chosen ones, kept with the keys and checked');
+                        next();
+                      }));
+                    }));
+                  }));
                 }));
               }));
             }));

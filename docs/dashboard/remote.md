@@ -40,6 +40,14 @@ The [Remotes](../remotes.md) page lists the LG remotes Glasshouse knows and the 
 
 The available keys reflect what the TV's software supports, not necessarily what is present on a specific physical remote. A Magic Remote lacks color, Guide, and Info keys, while a standard IR remote lacks dedicated streaming buttons, but the TV can receive both.
 
+The **Remote** row at the top of the Remote keys section shows the remote in use and picture, says which remotes were detected, and chooses which remotes the keys are shown for:
+
+* **Automatic** (the default): the remote the TV is paired with, and any seen in use in the last 30 days.
+* **Choose remotes**: tick the remotes from the [Remotes](../remotes.md) page. This is for a TV used with more than one remote, so the keys of all of them show.
+* **All buttons**: every key the TV offers, as before.
+
+The choice is kept with the key settings, nothing on the TV changes with it, and a [settings backup](server.md) carries it.
+
 Where the remote in use is one the [Remotes](../remotes.md) page has a finished button list for, the tab folds the keys that remote does not have into **Buttons on other remotes**, closed until opened. The remote is the one the TV is paired with, or one seen in use in the last 30 days, and the folding applies only if every such remote is listed there with a finished list: with a remote that is not listed, or whose list is not finished, every key stays in view. A key that has been changed is never folded away.
 
 The list names buttons supported by the TV's model generation (e.g. a C5 lists its Disney+ button while a CX does not; 2020 remotes add a Movies button, and recent Magic Remotes add Alexa and Google Assistant buttons).

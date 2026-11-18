@@ -1549,6 +1549,10 @@ button.tools-jump:active{background:var(--w80)}
 
 /* ---- Remote keys (apps.js): a tile per key, grouped as on the remote ---- */
 #apps-rk-list{margin-top:4px}
+.rk-remote-img{height:56px;width:auto;flex:0 0 auto;object-fit:contain}
+.rk-remotes{display:flex;flex-wrap:wrap;gap:12px 20px;margin-top:10px}
+.rk-remote{display:flex;align-items:center;gap:10px;cursor:pointer}
+.rk-remote .rk-remote-img{height:48px}
 .rk-grp{font:600 11px 'Manrope';letter-spacing:.14em;text-transform:uppercase;color:var(--w60);margin:22px 0 10px}
 .rk-more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
 .rk-more>summary::-webkit-details-marker{display:none}

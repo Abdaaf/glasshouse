@@ -296,8 +296,8 @@ var homeAssistantOn = function () { return false; };
 var homeGuideOn = function () { return false; };
 var messagesPath = MESSAGES_LOG;
 var reapplyDelayMs = 1000;
-// The LG remotes the tab is for, as cb(catalogue entries, null for one not catalogued): which keys it folds away.
-var selectedRemotesFn = null;
+// The LG remotes in use, as cb({ auto: catalogue entries (null for one not catalogued), detected: what lib/remotedetect found }).
+var detectRemotesFn = null;
 
 function init(opts) {
   opts = opts || {};
@@ -325,7 +325,7 @@ function init(opts) {
   homeAssistantOn = opts.homeAssistant || function () { return false; };
   homeGuideOn = opts.homeGuide || function () { return false; };
   messagesPath = opts.messagesPath || MESSAGES_LOG;
-  selectedRemotesFn = typeof opts.selectedRemotes === 'function' ? opts.selectedRemotes : null;
+  detectRemotesFn = typeof opts.detectRemotes === 'function' ? opts.detectRemotes : null;
   if (typeof opts.reapplyDelayMs === 'number') reapplyDelayMs = opts.reapplyDelayMs;
   muteToastsMs = opts.muteToastsMs || 0;
   powerTimers.forEach(function (t) { clearTimeout(t); });
@@ -414,14 +414,36 @@ function readStarting() {
   }
 }
 
-function writeMap(map, home, starting) {
-  if (!Object.keys(map).length && !home && !starting) {
+/*
+ * Which remotes the Remote tab is for: { mode: 'auto' } (the remote paired or
+ * seen in use lately), { mode: 'all' } (every key shown) or { mode: 'pick',
+ * ids } (the catalogue remotes chosen). Kept in the map's file, as `remotes`,
+ * only when it is not automatic.
+ */
+function readRemoteSelection() {
+  try {
+    var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
+    var r = j && j.remotes;
+    if (r && r.mode === 'all') return { mode: 'all', ids: [] };
+    if (r && r.mode === 'pick' && Array.isArray(r.ids)) {
+      var ids = r.ids.filter(function (id) { return typeof id === 'string'; });
+      if (ids.length) return { mode: 'pick', ids: ids };
+    }
+  } catch (e) { /* none kept */ }
+  return { mode: 'auto', ids: [] };
+}
+
+// selection is kept as it was in the file unless one is given.
+function writeMap(map, home, starting, selection) {
+  if (selection === undefined) selection = readRemoteSelection();
+  if (!Object.keys(map).length && !home && !starting && selection.mode === 'auto') {
     try { fs.unlinkSync(mapFile()); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     return;
   }
   var j = { keys: map, updated: new Date().toISOString() };
   if (home) j.home = home;
   if (starting) j.starting = starting;
+  if (selection.mode !== 'auto') j.remotes = selection;
   fs.writeFileSync(mapFile(), JSON.stringify(j, null, 2) + '\n', 'utf8');
 }
 
@@ -1539,18 +1561,19 @@ function getRemoteKeys(cb) {
   });
 }
 
-// cb(the remotes the tab is for); none where nothing says which, or the lookup fails.
-function withSelectedRemotes(cb) {
-  if (!selectedRemotesFn) return cb([]);
+// cb({ auto, detected }); empty where nothing says which remotes are in use, or the lookup fails.
+function withDetectedRemotes(cb) {
+  var none = { auto: [], detected: [] };
+  if (!detectRemotesFn) return cb(none);
   var answered = false;
   try {
-    selectedRemotesFn(function (selected) {
+    detectRemotesFn(function (found) {
       if (answered) return;
       answered = true;
-      cb(Array.isArray(selected) ? selected : []);
+      cb(found && Array.isArray(found.auto) ? { auto: found.auto, detected: found.detected || [] } : none);
     });
   } catch (e) {
-    if (!answered) { answered = true; cb([]); }
+    if (!answered) { answered = true; cb(none); }
   }
 }
 
@@ -1585,8 +1608,16 @@ function describeKeys(keys, inChain, cb, native) {
         if (!native && homeAssistantOn() && reported(k.key)) key.homeAssistant = true;
         return key;
       });
-      withSelectedRemotes(function (selected) {
-        // Keys on none of the remotes in use, folded unless changed (the page decides); only where every one is known.
+      withDetectedRemotes(function (found) {
+        var choice = readRemoteSelection();
+        // The remotes chosen, or those in use; all buttons is no remote, which folds nothing.
+        var selected = choice.mode === 'all' ? [] : found.auto;
+        if (choice.mode === 'pick') {
+          var picked = choice.ids.map(function (id) { return remotes.find(id); }).filter(Boolean);
+          if (picked.length) selected = picked;
+          else choice = { mode: 'auto', ids: [] };
+        }
+        // Keys on none of those, folded unless changed (the page decides); only where every one is known.
         var off = remotes.keysOffRemotes(selected, out.map(function (k) { return k.key; }));
         out.forEach(function (k) { if (off.indexOf(k.key) !== -1) k.offRemote = true; });
         cb({
@@ -1594,9 +1625,16 @@ function describeKeys(keys, inChain, cb, native) {
           choices: switchers.concat(media, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
           inChain: inChain,
           remotes: {
+            mode: choice.mode,
+            ids: choice.ids,
             folding: off.length > 0,
             selected: selected.filter(Boolean).map(function (r) { return { id: r.id, title: r.title, image: remotes.imageFile(r) }; }),
-            unknown: selected.filter(function (r) { return !r; }).length
+            unknown: selected.filter(function (r) { return !r; }).length,
+            // What is in use, and what can be chosen, for the selector.
+            detected: found.detected.map(function (d) {
+              return { name: d.name, id: d.id, title: d.title, image: d.image, current: !!d.current };
+            }),
+            catalogue: remotes.all().map(function (r) { return { id: r.id, title: r.title, image: remotes.imageFile(r) }; })
           }
         });
       });
@@ -1703,6 +1741,33 @@ function applyAny(cb) {
  * The app the Home key opens, for Glasshouse Home, or '' to give Home back to
  * LG's filters. cb({ ok, error }).
  */
+/*
+ * Which remotes the tab is for: mode 'auto', 'all', or 'pick' with the ids of
+ * catalogue remotes. Only the tab's own choice changes: nothing is written to
+ * the TV. cb({ ok, error }).
+ */
+function setRemoteSelection(mode, ids, cb) {
+  var selection = { mode: 'auto', ids: [] };
+  if (mode === 'all') {
+    selection = { mode: 'all', ids: [] };
+  } else if (mode === 'pick') {
+    var known = Array.isArray(ids) ? ids.filter(function (id) { return remotes.find(id); }) : [];
+    var seen = {};
+    known = known.filter(function (id) { var one = remotes.find(id).id; if (seen[one]) return false; seen[one] = true; return true; })
+      .map(function (id) { return remotes.find(id).id; });
+    if (!known.length) return cb({ ok: false, error: msg('srv.remoteKeys.badRemotes', 'Choose Automatic, All buttons, or at least one remote from the list') });
+    selection = { mode: 'pick', ids: known };
+  } else if (mode !== 'auto') {
+    return cb({ ok: false, error: msg('srv.remoteKeys.badRemotes', 'Choose Automatic, All buttons, or at least one remote from the list') });
+  }
+  try {
+    writeMap(readMap(), readHome(), readStarting(), selection);
+  } catch (e) {
+    return cb({ ok: false, error: msg('srv.remoteKeys.saveFailed', 'Could not save the change: {error}', { error: e.message }) });
+  }
+  cb({ ok: true });
+}
+
 function setHome(id, cb) {
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
   save(readMap(), cb, String(id || ''));
@@ -1882,6 +1947,7 @@ module.exports = {
   isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
+  setRemoteSelection: setRemoteSelection,
   setStarting: setStarting,
   homeApp: readHome,
   ensure: ensure,

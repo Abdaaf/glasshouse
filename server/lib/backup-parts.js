@@ -305,6 +305,22 @@ var PARTS = [
     }
   },
   {
+    // Which remotes the Remote tab is for: { mode: 'auto' | 'all' | 'pick', ids }.
+    id: 'remoteSelection',
+    action: 'remoteSelection',
+    valid: function (v) {
+      return isObject(v) && (v.mode === 'auto' || v.mode === 'all' || (v.mode === 'pick' && Array.isArray(v.ids) &&
+        v.ids.length > 0 && v.ids.every(function (id) { return typeof id === 'string' && id.length <= 40; })));
+    },
+    read: function (cb) {
+      remoteKeys.getRemoteKeys(function (r) {
+        if (!r || !r.supported || !r.remotes) return cb(undefined);
+        cb({ mode: r.remotes.mode, ids: r.remotes.ids });
+      });
+    },
+    write: function (v, cb) { remoteKeys.setRemoteSelection(v.mode, v.ids, cb); }
+  },
+  {
     // { '1'..'9': what the key opens, '' for nothing }.
     id: 'quickAccess',
     action: 'quickAccess',

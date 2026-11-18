@@ -2451,6 +2451,11 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!remoteKeysModule) return send(res, 503, JSON.stringify({ ok: false, error: 'remote keys module unavailable' }));
+      if (body && body.remotes !== undefined) {
+        return remoteKeysModule.setRemoteSelection(body.remotes && body.remotes.mode, body.remotes && body.remotes.ids, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
       remoteKeysModule.setRemoteKey(body && body.key, body && body.action, body && body.id, function (r) {
         send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
       });
