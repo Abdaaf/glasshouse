@@ -236,6 +236,7 @@
  "apps.remoteKeys.nothing": {"text": "Ничего", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Открывает: {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Прочие кнопки", "from": "Other keys"},
+ "apps.remoteKeys.otherRemotes": {"text": "Кнопки других пультов ({n})", "from": "Buttons on other remotes ({n})"},
  "apps.remoteKeys.streaming": {"text": "Кнопки стриминговых сервисов", "from": "Streaming buttons"},
  "apps.remoteKeys.turnsOffVoice": {"text": "Пока для этой кнопки задано другое, голосовой помощник LG отключен: не работают голосовой поиск, ИИ-помощник и микрофон, до возврата к значению «Как задано в LG».", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
  "apps.restore.dismiss": {"text": "Скрыть", "from": "Dismiss"},

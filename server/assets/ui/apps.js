@@ -395,6 +395,7 @@ let rkOpen = null;     // the key whose picker is open
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
 let rkMoreOpen = false;  // the other countries' keys, folded until opened
+let rkOtherOpen = false; // the keys of other remotes, folded until opened
 
 function rkIcon(id) {
   return `<img class="rk-ico" src="${esc(api('/api/apps/icon?id=' + encodeURIComponent(id)))}" alt="" onerror="this.style.visibility='hidden'">`;
@@ -469,7 +470,10 @@ function renderRemoteKeys(d) {
   // A key only another country's remotes have waits at the end, folded away,
   // unless it has been changed.
   const away = rk.keys.filter(k => k.elsewhere && k.action === 'lg');
-  const placed = new Set(away.map(k => k.key));
+  // Keys none of the remotes in use has, where the server knows them all (the catalogue); one that is
+  // changed stays in sight whatever the remote.
+  const otherRemotes = rk.keys.filter(k => k.offRemote && !k.elsewhere && k.action === 'lg');
+  const placed = new Set(away.concat(otherRemotes).map(k => k.key));
   const groups = RK_GROUPS.map(g => {
     // In the group's own order, as the remote has them.
     const inGroup = g.keys ? g.keys.map(name => rk.keys.find(k => k.key === name)).filter(Boolean) : rk.keys;
@@ -482,7 +486,10 @@ function renderRemoteKeys(d) {
   const more = away.length ? `<details class="rk-more"${rkMoreOpen ? ' open' : ''} ontoggle="rkMoreOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.elsewhere', 'Buttons on remotes sold elsewhere ({n})', { n: away.length }))}</summary>
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
-  list.innerHTML = groups + more;
+  const other = otherRemotes.length ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
+      <summary class="rk-grp">${esc(t('apps.remoteKeys.otherRemotes', 'Buttons on other remotes ({n})', { n: otherRemotes.length }))}</summary>
+      <div class="rk-grid">${otherRemotes.map(tile).join('')}</div></details>` : '';
+  list.innerHTML = groups + more + other;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;

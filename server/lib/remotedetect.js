@@ -201,9 +201,27 @@ function detect(cb, fresh) {
   });
 }
 
+// Automatic selection looks back this far for a remote seen in use.
+var AUTO_WINDOW_MS = 30 * 24 * 3600 * 1000;
+
+/*
+ * The remotes the Remote tab is for when it is left on Automatic: those paired
+ * now and those seen in the last 30 days, as catalogue entries, null for one the
+ * catalogue lacks. detected is detect()'s answer.
+ */
+function autoSelected(detected, now) {
+  var out = [];
+  ((detected && detected.remotes) || []).forEach(function (r) {
+    if (r.current || (r.lastSeen !== null && now - r.lastSeen <= AUTO_WINDOW_MS)) out.push(remotes.find(r.name));
+  });
+  return out;
+}
+
 module.exports = {
   init: init,
   detect: detect,
+  autoSelected: autoSelected,
+  AUTO_WINDOW_MS: AUTO_WINDOW_MS,
   // For the tests.
   pressesIn: pressesIn,
   CACHE_MS: CACHE_MS,

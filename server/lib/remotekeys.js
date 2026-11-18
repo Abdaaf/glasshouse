@@ -77,6 +77,7 @@ var fs = require('fs');
 var path = require('path');
 var msg = require('./say').msg;
 var allocBuffer = require('./util').allocBuffer;
+var remotes = require('./remotes');
 
 var CONFIG_KEY = 'com.webos.surfacemanager.keyFilters';
 // What each key does, read by the filter; see the header.
@@ -295,6 +296,8 @@ var homeAssistantOn = function () { return false; };
 var homeGuideOn = function () { return false; };
 var messagesPath = MESSAGES_LOG;
 var reapplyDelayMs = 1000;
+// The LG remotes the tab is for, as cb(catalogue entries, null for one not catalogued): which keys it folds away.
+var selectedRemotesFn = null;
 
 function init(opts) {
   opts = opts || {};
@@ -322,6 +325,7 @@ function init(opts) {
   homeAssistantOn = opts.homeAssistant || function () { return false; };
   homeGuideOn = opts.homeGuide || function () { return false; };
   messagesPath = opts.messagesPath || MESSAGES_LOG;
+  selectedRemotesFn = typeof opts.selectedRemotes === 'function' ? opts.selectedRemotes : null;
   if (typeof opts.reapplyDelayMs === 'number') reapplyDelayMs = opts.reapplyDelayMs;
   muteToastsMs = opts.muteToastsMs || 0;
   powerTimers.forEach(function (t) { clearTimeout(t); });
@@ -1535,6 +1539,21 @@ function getRemoteKeys(cb) {
   });
 }
 
+// cb(the remotes the tab is for); none where nothing says which, or the lookup fails.
+function withSelectedRemotes(cb) {
+  if (!selectedRemotesFn) return cb([]);
+  var answered = false;
+  try {
+    selectedRemotesFn(function (selected) {
+      if (answered) return;
+      answered = true;
+      cb(Array.isArray(selected) ? selected : []);
+    });
+  } catch (e) {
+    if (!answered) { answered = true; cb([]); }
+  }
+}
+
 function describeKeys(keys, inChain, cb, native) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
@@ -1566,10 +1585,20 @@ function describeKeys(keys, inChain, cb, native) {
         if (!native && homeAssistantOn() && reported(k.key)) key.homeAssistant = true;
         return key;
       });
-      cb({
-        ok: true, supported: true, keys: out,
-        choices: switchers.concat(media, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
-        inChain: inChain
+      withSelectedRemotes(function (selected) {
+        // Keys on none of the remotes in use, folded unless changed (the page decides); only where every one is known.
+        var off = remotes.keysOffRemotes(selected, out.map(function (k) { return k.key; }));
+        out.forEach(function (k) { if (off.indexOf(k.key) !== -1) k.offRemote = true; });
+        cb({
+          ok: true, supported: true, keys: out,
+          choices: switchers.concat(media, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
+          inChain: inChain,
+          remotes: {
+            folding: off.length > 0,
+            selected: selected.filter(Boolean).map(function (r) { return { id: r.id, title: r.title, image: remotes.imageFile(r) }; }),
+            unknown: selected.filter(function (r) { return !r; }).length
+          }
+        });
       });
     });
   });

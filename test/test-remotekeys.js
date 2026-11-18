@@ -936,6 +936,52 @@ step(function (next) {
   }));
 });
 
+// The keys of the remotes in use: those on none of them are marked, only where all are known
+step(function (next) {
+  var known = { id: 'A', title: 'Remote A', complete: true, image: 'generic.png', keys: { netflix: 'measured', amazon: 'measured' } };
+  var selected = [known];
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    selectedRemotes: function (cb) { process.nextTick(function () { cb(selected); }); } });
+  rk.getRemoteKeys(guard(function (r) {
+    var off = r.keys.filter(function (k) { return k.offRemote; }).map(function (k) { return k.key; });
+    assert.ok(off.length > 0 && off.indexOf('netflix') === -1 && off.indexOf('amazon') === -1, 'keys the remote lacks are marked, its own are not');
+    assert.ok(off.indexOf('red') !== -1);
+    assert.strictEqual(r.remotes.folding, true);
+    assert.deepEqual(r.remotes.selected, [{ id: 'A', title: 'Remote A', image: 'generic.png' }]);
+    assert.strictEqual(r.remotes.unknown, 0);
+    rk.setRemoteKey('red', 'open', 'netflix', guard(function (s) {
+      assert.ok(s.ok, s.error);
+      rk.getRemoteKeys(guard(function (changed) {
+        var red = changed.keys.filter(function (k) { return k.key === 'red'; })[0];
+        assert.strictEqual(red.action, 'open');
+        assert.strictEqual(red.offRemote, true, 'marked all the same: the page keeps a changed key in sight');
+        selected = [known, null];
+        rk.getRemoteKeys(guard(function (withUnknown) {
+          assert.ok(!withUnknown.keys.some(function (k) { return k.offRemote; }), 'an unknown remote in use folds nothing');
+          assert.strictEqual(withUnknown.remotes.folding, false);
+          assert.strictEqual(withUnknown.remotes.unknown, 1);
+          selected = [{ id: 'U', title: 'Unfinished', complete: false, keys: { netflix: 'measured' } }];
+          rk.getRemoteKeys(guard(function (unfinished) {
+            assert.ok(!unfinished.keys.some(function (k) { return k.offRemote; }), 'nor does an unfinished list');
+            selected = [];
+            rk.getRemoteKeys(guard(function (none) {
+              assert.ok(!none.keys.some(function (k) { return k.offRemote; }), 'nor does no remote');
+              rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir, selectedRemotes: function () { throw new Error('lookup failed'); } });
+              rk.getRemoteKeys(guard(function (failed) {
+                assert.ok(failed.ok && !failed.keys.some(function (k) { return k.offRemote; }), 'a lookup that fails folds nothing');
+                rk.setRemoteKey('red', 'lg', '', guard(function () {
+                  console.log('  ✓ keys on none of the remotes in use are marked where every remote is known, and never otherwise');
+                  next();
+                }));
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);

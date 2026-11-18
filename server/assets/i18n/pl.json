@@ -242,6 +242,7 @@
  "apps.remoteKeys.nothing": {"text": "Nic", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Otwiera {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Inne przyciski", "from": "Other keys"},
+ "apps.remoteKeys.otherRemotes": {"text": "Przyciski innych pilotów ({n})", "from": "Buttons on other remotes ({n})"},
  "apps.remoteKeys.streaming": {"text": "Przyciski serwisów streamingowych", "from": "Streaming buttons"},
  "apps.remoteKeys.toHomeAssistant": {"text": "Do Home Assistant", "from": "To Home Assistant"},
  "apps.remoteKeys.turnsOffVoice": {"text": "Ustawienie tego przycisku wyłącza asystenta głosowego LG, więc wyszukiwanie głosowe, asystent AI i mikrofon przestają działać, dopóki znów nie będzie ustawiony Tak jak u LG.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},

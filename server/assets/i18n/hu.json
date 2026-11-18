@@ -236,6 +236,7 @@
  "apps.remoteKeys.nothing": {"text": "Semmi", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Megnyitja: {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Egyéb gombok", "from": "Other keys"},
+ "apps.remoteKeys.otherRemotes": {"text": "Más távirányítók gombjai ({n})", "from": "Buttons on other remotes ({n})"},
  "apps.remoteKeys.streaming": {"text": "Streaminggombok", "from": "Streaming buttons"},
  "apps.remoteKeys.turnsOffVoice": {"text": "Ennek a gombnak a beállítása kikapcsolja az LG hangsegédét, így a hangalapú keresés, az AI-asszisztens és a mikrofon nem működik, amíg vissza nem állítják az LG szerinti működésre.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
  "apps.restore.dismiss": {"text": "Bezárás", "from": "Dismiss"},

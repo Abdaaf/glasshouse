@@ -271,6 +271,7 @@
  "apps.remoteKeys.nothing": {"from": "Nothing", "text": "Rien"},
  "apps.remoteKeys.opens": {"from": "Opens {app}", "text": "Ouvre {app}"},
  "apps.remoteKeys.other": {"from": "Other keys", "text": "Autres touches"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Boutons d’autres télécommandes ({n})"},
  "apps.remoteKeys.replacesVoice": {"from": "Set to anything else, this button no longer starts voice control. As LG has it brings it back.", "text": "Réglé sur autre chose, ce bouton ne lance plus le contrôle vocal. Comme LG l'a prévu le rétablit."},
  "apps.remoteKeys.streaming": {"from": "Streaming buttons", "text": "Boutons de streaming"},
  "apps.remoteKeys.toHomeAssistant": {"from": "To Home Assistant", "text": "Vers Home Assistant"},

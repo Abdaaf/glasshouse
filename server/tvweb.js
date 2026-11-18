@@ -615,7 +615,11 @@ doh.init({});
 appDns.init({ luna: luna, stateDir: __dirname, doh: doh });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
 remoteDetect.init({ pairing: telemetry.remoteInfo, stateDir: __dirname });
-remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
+// The remotes the Remote tab is for: those paired or seen in use lately (the dashboard can choose others).
+function selectedRemotes(cb) {
+  remoteDetect.detect(function (found) { cb(remoteDetect.autoSelected(found, Date.now())); });
+}
+remoteKeys.init({ selectedRemotes: selectedRemotes, luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
   homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },

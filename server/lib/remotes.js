@@ -65,6 +65,23 @@ function hasKey(remote, key) {
   return !!(remote && remote.keys && Object.prototype.hasOwnProperty.call(remote.keys, key));
 }
 
+/*
+ * The keys, out of keyNames, that none of the selected remotes has, which the
+ * Remote tab folds away. Only where that is known: every selected remote has
+ * to be in the catalogue (null is a remote that is not) with a list marked
+ * complete, and there has to be one. Otherwise nothing is folded, so a remote
+ * that is unknown or whose list is not finished never hides a button.
+ */
+function keysOffRemotes(selected, keyNames) {
+  if (!selected || !selected.length) return [];
+  for (var i = 0; i < selected.length; i++) {
+    if (!selected[i] || selected[i].complete !== true) return [];
+  }
+  return keyNames.filter(function (key) {
+    return !selected.some(function (remote) { return hasKey(remote, key); });
+  });
+}
+
 // The file name of the remote's picture, under /assets/remotes/.
 function imageFile(remote) {
   return remote && remote.image ? remote.image : GENERIC_IMAGE;
@@ -76,6 +93,7 @@ module.exports = {
   normalizeName: normalizeName,
   keysOf: keysOf,
   hasKey: hasKey,
+  keysOffRemotes: keysOffRemotes,
   imageFile: imageFile,
   GENERIC_IMAGE: GENERIC_IMAGE
 };

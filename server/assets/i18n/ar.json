@@ -242,6 +242,7 @@
  "apps.remoteKeys.nothing": {"text": "لا شيء", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "يفتح {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "أزرار أخرى", "from": "Other keys"},
+ "apps.remoteKeys.otherRemotes": {"text": "أزرار في ريموتات أخرى ({n})", "from": "Buttons on other remotes ({n})"},
  "apps.remoteKeys.streaming": {"text": "أزرار خدمات البث", "from": "Streaming buttons"},
  "apps.remoteKeys.turnsOffVoice": {"text": "تخصيص هذا الزر يوقف المساعد الصوتي لـ LG، لذا سيتوقف البحث الصوتي والذكاء الاصطناعي والميكروفون حتى تعيده لوضع LG الافتراضي.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
  "apps.restore.dismiss": {"text": "تجاهل", "from": "Dismiss"},

@@ -15,13 +15,23 @@
         "netflix": "measured",
         "amazon": "measured",
         "channelup": "measured",
-        "channeldown": "measured"
+        "channeldown": "measured",
+        "disneyplus": "documented",
+        "rakutentv": "documented",
+        "lgchannels": "documented",
+        "alexa": "documented",
+        "ai": "documented",
+        "guide": "documented",
+        "homehub": "assumed",
+        "multikey": "assumed"
       },
       "sources": [
-        "OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of these keys read from the remote's input device, and CH+ and CH- received by the key filter",
+        "OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of Netflix, Prime Video, CH+ and CH- read from the remote's input device, and CH+ and CH- received by the key filter",
+        "The remote's own picture (server/assets/remotes/MR26GA.png): the buttons printed with a name, as the documented keys",
+        "The round button at the top left and the ? button at the top right look like the MR25GA's Home Hub and ? buttons; that they are the same keys is assumed",
         "This remote has no number keys"
       ],
-      "notes": "The name the TV reports for this remote has not been read yet; LGE MR26GA follows the others' pattern. The rest of its buttons are to be listed."
+      "notes": "The name the TV reports for this remote has not been read yet; LGE MR26GA follows the others' pattern. The list is not marked complete until it has been checked against the remote."
     }
   ]
 }

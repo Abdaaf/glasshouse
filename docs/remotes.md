@@ -6,7 +6,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 
 | Remote | Year | Reported by the TV as | Keys known | List complete |
 | :----- | :--- | :-------------------- | ---------: | :------------ |
-| [Magic Remote MR26GA](#mr26ga) | not known | `LGE MR26GA` | 4 | no |
+| [Magic Remote MR26GA](#mr26ga) | not known | `LGE MR26GA` | 12 | no |
 
 How sure each fact is:
 
@@ -26,12 +26,22 @@ Reported by the TV as `LGE MR26GA` (assumed). Has no number keys. The list of ke
 | Prime Video (`amazon`) | measured |
 | Channel up (`channelup`) | measured |
 | Channel down (`channeldown`) | measured |
+| Disney+ (`disneyplus`) | documented |
+| Rakuten TV (`rakutentv`) | documented |
+| LG Channels (`lgchannels`) | documented |
+| Alexa (`alexa`) | documented |
+| AI (`ai`) | documented |
+| Guide (`guide`) | documented |
+| Home Hub (`homehub`) | assumed |
+| ? button (`multikey`) | assumed |
 
-The name the TV reports for this remote has not been read yet; LGE MR26GA follows the others' pattern. The rest of its buttons are to be listed.
+The name the TV reports for this remote has not been read yet; LGE MR26GA follows the others' pattern. The list is not marked complete until it has been checked against the remote.
 
 Where this comes from:
 
-* OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of these keys read from the remote's input device, and CH+ and CH- received by the key filter
+* OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of Netflix, Prime Video, CH+ and CH- read from the remote's input device, and CH+ and CH- received by the key filter
+* The remote's own picture (server/assets/remotes/MR26GA.png): the buttons printed with a name, as the documented keys
+* The round button at the top left and the ? button at the top right look like the MR25GA's Home Hub and ? buttons; that they are the same keys is assumed
 * This remote has no number keys
 
 ## Adding a remote

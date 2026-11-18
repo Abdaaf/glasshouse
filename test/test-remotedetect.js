@@ -178,6 +178,24 @@ steps([
       console.log('  ✓ the remote input devices give a family hint, once each');
       next();
     }, true);
+  },
+  // Automatic selection: paired now or seen in the last 30 days
+  function (next) {
+    var day = 24 * 3600 * 1000;
+    var found = { remotes: [
+      { name: 'LGE MR26GA', current: true, lastSeen: clock },
+      { name: 'LGE MR99', current: false, lastSeen: clock - 29 * day },
+      { name: 'LGE MR98', current: false, lastSeen: clock - 31 * day },
+      { name: 'LGE MR97', current: false, lastSeen: null }
+    ] };
+    var picked = detect.autoSelected(found, clock);
+    assert.strictEqual(picked.length, 2, 'the paired one and the one seen 29 days ago');
+    assert.strictEqual(picked[0].id, 'MR26GA', 'a catalogued remote is its entry');
+    assert.strictEqual(picked[1], null, 'one the catalogue lacks is null');
+    assert.deepEqual(detect.autoSelected({ remotes: [] }, clock), []);
+    assert.deepEqual(detect.autoSelected(null, clock), []);
+    console.log('  ✓ Automatic means the remote paired now and those seen in the last 30 days');
+    next();
   }
 ], function () {
   [LOG, DEVICES, SEEN].forEach(function (f) { try { fs.unlinkSync(f); } catch (e) {} });

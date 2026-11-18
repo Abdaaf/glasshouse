@@ -242,6 +242,7 @@
  "apps.remoteKeys.nothing": {"text": "Niente", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Apre {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Altri tasti", "from": "Other keys"},
+ "apps.remoteKeys.otherRemotes": {"text": "Tasti di altri telecomandi ({n})", "from": "Buttons on other remotes ({n})"},
  "apps.remoteKeys.streaming": {"text": "Tasti di streaming", "from": "Streaming buttons"},
  "apps.remoteKeys.turnsOffVoice": {"text": "Impostando questo tasto si disattiva l'assistente vocale LG, quindi ricerca vocale, assistente AI e microfono smettono di funzionare finché non torna a Come da LG.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
  "apps.restore.dismiss": {"text": "Ignora", "from": "Dismiss"},

@@ -242,6 +242,7 @@
  "apps.remoteKeys.nothing": {"text": "Nada", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Abre {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Outras teclas", "from": "Other keys"},
+ "apps.remoteKeys.otherRemotes": {"text": "Botões de outros comandos ({n})", "from": "Buttons on other remotes ({n})"},
  "apps.remoteKeys.streaming": {"text": "Botões de streaming", "from": "Streaming buttons"},
  "apps.remoteKeys.turnsOffVoice": {"text": "Definir esta tecla desativa o assistente de voz da LG, pelo que a pesquisa por voz, o assistente de IA e o microfone deixam de funcionar até voltar a estar Como a LG a tem.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
  "apps.restore.dismiss": {"text": "Ignorar", "from": "Dismiss"},

@@ -69,4 +69,17 @@ assert.ok(!remotes.hasKey(remotes.find('MR26GA'), 'hulu'), 'a key not listed is 
 assert.deepEqual(remotes.keysOf(null), []);
 console.log('  ✓ names find their remote whatever their case, spacing or prefix, and an unknown one is not guessed');
 
+// 5. Which keys fold away: only where every selected remote is known, with a finished list
+var finished = { id: 'A', complete: true, keys: { netflix: 'measured', amazon: 'measured' } };
+var finishedToo = { id: 'B', complete: true, keys: { amazon: 'documented', red: 'documented' } };
+var unfinished = { id: 'C', complete: false, keys: { netflix: 'measured' } };
+var offered = ['netflix', 'amazon', 'red', 'hulu'];
+assert.deepEqual(remotes.keysOffRemotes([finished], offered), ['red', 'hulu'], 'keys the one remote lacks');
+assert.deepEqual(remotes.keysOffRemotes([finished, finishedToo], offered), ['hulu'], 'a key either has stays');
+assert.deepEqual(remotes.keysOffRemotes([finished, unfinished], offered), [], 'one unfinished list folds nothing');
+assert.deepEqual(remotes.keysOffRemotes([finished, null], offered), [], 'nor does an unknown remote');
+assert.deepEqual(remotes.keysOffRemotes([], offered), [], 'nor does no remote at all');
+assert.deepEqual(remotes.keysOffRemotes(null, offered), []);
+console.log('  ✓ keys fold away only where every remote in use is known with a finished list');
+
 console.log('test-remotes.js passed');
