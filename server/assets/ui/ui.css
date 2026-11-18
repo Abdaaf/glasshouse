@@ -1549,10 +1549,19 @@ button.tools-jump:active{background:var(--w80)}
 
 /* ---- Remote keys (apps.js): a tile per key, grouped as on the remote ---- */
 #apps-rk-list{margin-top:4px}
-.rk-remote-img{height:56px;width:auto;flex:0 0 auto;object-fit:contain}
-.rk-remotes{display:flex;flex-wrap:wrap;gap:12px 20px;margin-top:10px}
-.rk-remote{display:flex;align-items:center;gap:10px;cursor:pointer}
-.rk-remote .rk-remote-img{height:48px}
+.rm-now{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:flex-start;margin-top:14px}
+.rm-pics{display:flex;gap:12px;flex:0 0 auto}
+.rm-pic{height:170px;width:auto;object-fit:contain}
+.rm-opts{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.rm-opt{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.rm-opt input{margin-top:3px;flex:0 0 auto}
+.rm-opt-t{display:block;font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;color:var(--w90)}
+.rm-opt-d{display:block;font-size:13px;color:var(--w60);margin-top:2px;line-height:1.45}
+.rm-detected{color:var(--w90)}
+.rm-picks{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:10px}
+.rm-pick{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px}
+.rm-pick img{height:56px;width:auto}
+.rm-why{margin-top:14px}
 .rk-grp{font:600 11px 'Manrope';letter-spacing:.14em;text-transform:uppercase;color:var(--w60);margin:22px 0 10px}
 .rk-more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
 .rk-more>summary::-webkit-details-marker{display:none}

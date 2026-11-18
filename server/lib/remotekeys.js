@@ -1628,6 +1628,11 @@ function describeKeys(keys, inChain, cb, native) {
             mode: choice.mode,
             ids: choice.ids,
             folding: off.length > 0,
+            // Why nothing is folded where it is not (for the page to say): 'none' no remote is known to be in use,
+            // 'unknown' one is not in the catalogue, 'unfinished' one's list of buttons is not finished.
+            why: off.length > 0 || choice.mode === 'all' ? '' : !selected.length ? 'none'
+              : selected.some(function (r) { return !r; }) ? 'unknown'
+              : selected.some(function (r) { return r.complete !== true; }) ? 'unfinished' : '',
             selected: selected.filter(Boolean).map(function (r) { return { id: r.id, title: r.title, image: remotes.imageFile(r) }; }),
             unknown: selected.filter(function (r) { return !r; }).length,
             // What is in use, and what can be chosen, for the selector.

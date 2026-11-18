@@ -433,6 +433,44 @@ function showRemoteTab() {
   if (has === false && activeTab === 'remote') showTab('control');
 }
 
+// The Your remote section: which remotes the Remote keys are shown for.
+function renderRemoteChoice(rk) {
+  const disc = q('disc-remote');
+  const body = q('apps-remote-body');
+  if (!disc || !body) return;
+  const rs = rk && rk.remotes;
+  disc.hidden = !rs;
+  if (!rs) return;
+  const known = rs.selected;
+  const shownNames = known.map(r => r.title).join(', ');
+  q('apps-remote-summary').textContent = rs.mode === 'all' ? t('apps.remote.all', 'All buttons')
+    : rs.mode === 'pick' ? shownNames
+    : (shownNames ? t('apps.remote.auto', 'Automatic') + ' · ' + shownNames : t('apps.remote.auto', 'Automatic'));
+  const pics = (rs.mode === 'all' || !known.length ? [{ image: 'generic.png', title: '' }] : known)
+    .map(r => `<img class="rm-pic" src="/assets/remotes/${esc(r.image)}" alt="${esc(r.title)}">`).join('');
+  const detected = rs.detected.length
+    ? rs.detected.map(x => x.id ? x.title : t('apps.remote.detectedUnknown', '{name} (not in the list of remotes)', { name: x.name })).join(', ')
+    : t('apps.remote.noneDetected', 'No remote detected');
+  const dis = rkWritable ? '' : 'disabled';
+  const radio = (value, title, desc, extra) => `<label class="rm-opt">
+      <input type="radio" name="apps-remote-mode" value="${value}" ${rs.mode === value ? 'checked' : ''} ${dis} onchange="rkSetRemotes('${value}')">
+      <span><span class="rm-opt-t">${esc(title)}</span><span class="rm-opt-d">${esc(desc)}</span>${extra || ''}</span></label>`;
+  const picks = rs.mode === 'pick' ? `<div class="rm-picks">${rs.catalogue.map(c => `<label class="rm-pick">
+      <input type="checkbox" value="${esc(c.id)}" ${rs.ids.indexOf(c.id) !== -1 ? 'checked' : ''} ${dis} onchange="rkSetRemotes('pick')">
+      <img src="/assets/remotes/${esc(c.image)}" alt=""><span>${esc(c.title)}</span></label>`).join('')}</div>` : '';
+  const why = {
+    none: t('apps.remote.whyNone', 'No remote is detected, so every button is shown.'),
+    unknown: t('apps.remote.whyUnknown', 'A remote that is not in the list of remotes is in use, so every button is shown.'),
+    unfinished: t('apps.remote.whyUnfinished', 'This remote\u2019s button list is not finished, so every button is shown.')
+  }[rs.why];
+  body.innerHTML = `<div class="rm-now"><div class="rm-pics">${pics}</div><div class="rm-opts">
+      ${radio('auto', t('apps.remote.auto', 'Automatic'), t('apps.remote.autoDesc', 'The remote this TV is paired with, and any seen in use in the last 30 days.'),
+        `<span class="rm-opt-d rm-detected">${esc(t('apps.remote.detected', 'Detected now: {name}', { name: detected }))}</span>`)}
+      ${radio('pick', t('apps.remote.pick', 'Choose remotes'), t('apps.remote.pickDesc', 'For a TV used with more than one remote: tick each one you use.'), picks)}
+      ${radio('all', t('apps.remote.all', 'All buttons'), t('apps.remote.allDesc', 'Every button the TV supports, whatever the remote.'))}
+    </div></div>${why ? `<div class="pv-note rm-why">${esc(why)}</div>` : ''}`;
+}
+
 function renderRemoteKeys(d) {
   const disc = q('disc-remotekeys');
   const list = q('apps-rk-list');
@@ -448,6 +486,7 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
+  renderRemoteChoice(rk);
   renderInputs();
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) return;
@@ -489,29 +528,7 @@ function renderRemoteKeys(d) {
   const other = otherRemotes.length ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.otherRemotes', 'Buttons on other remotes ({n})', { n: otherRemotes.length }))}</summary>
       <div class="rk-grid">${otherRemotes.map(tile).join('')}</div></details>` : '';
-  // Which remotes the keys are shown for: automatic, all buttons, or ones chosen from the list.
-  const rs = rk.remotes;
-  let remoteRow = '';
-  if (rs) {
-    const shown = rs.mode === 'pick' || rs.mode === 'auto' ? (rs.selected[0] && rs.selected[0].image) : null;
-    const detectedText = rs.detected.length
-      ? rs.detected.map(d => d.id ? d.title : t('apps.remoteKeys.detectedUnknown', '{name} (not in the list of remotes)', { name: d.name })).join(', ')
-      : t('apps.remoteKeys.noneDetected', 'No remote detected');
-    const picks = rs.mode === 'pick' ? `<div class="rk-remotes">${rs.catalogue.map(c => `<label class="rk-remote">
-        <input type="checkbox" value="${esc(c.id)}" ${rs.ids.indexOf(c.id) !== -1 ? 'checked' : ''} ${rkWritable ? '' : 'disabled'} onchange="rkSetRemotes('pick')">
-        <img class="rk-remote-img" src="/assets/remotes/${esc(c.image)}" alt=""><span>${esc(c.title)}</span></label>`).join('')}</div>` : '';
-    remoteRow = `<div class="prot-row">
-      <img class="rk-remote-img rk-remote-now" src="/assets/remotes/${esc(shown || 'generic.png')}" alt="">
-      <div class="prot-main"><div class="prot-title"><label for="apps-rk-remote">${esc(t('apps.remoteKeys.remote', 'Remote'))}</label></div>
-        <div class="prot-desc">${esc(t('apps.remoteKeys.remoteDesc', 'The keys below are shown for these remotes: keys they do not have are folded away. Keys of a remote that is not in the list of remotes stay in view.'))}</div>
-        <div class="prot-desc">${esc(t('apps.remoteKeys.detected', 'Detected: {name}', { name: detectedText }))}</div>${picks}</div>
-      <div class="prot-status"><select id="apps-rk-remote" class="pill-sel" ${rkWritable ? '' : 'disabled'} onchange="rkSetRemotes(this.value)">
-        <option value="auto"${rs.mode === 'auto' ? ' selected' : ''}>${esc(t('apps.remoteKeys.remoteAuto', 'Automatic'))}</option>
-        <option value="pick"${rs.mode === 'pick' ? ' selected' : ''}>${esc(t('apps.remoteKeys.remotePick', 'Choose remotes'))}</option>
-        <option value="all"${rs.mode === 'all' ? ' selected' : ''}>${esc(t('apps.remoteKeys.remoteAll', 'All buttons'))}</option>
-      </select></div></div>`;
-  }
-  list.innerHTML = remoteRow + groups + more + other;
+  list.innerHTML = groups + more + other;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
@@ -626,7 +643,7 @@ async function chooseRemoteKey(btn) {
 async function rkSetRemotes(mode) {
   let ids = [];
   if (mode === 'pick') {
-    ids = Array.from(document.querySelectorAll('#apps-rk-list .rk-remote input:checked')).map(el => el.value);
+    ids = Array.from(document.querySelectorAll('#apps-remote-body .rm-pick input:checked')).map(el => el.value);
     if (!ids.length && rkData && rkData.remotes) {
       const first = rkData.remotes.catalogue[0];
       ids = rkData.remotes.ids.length ? rkData.remotes.ids : (first ? [first.id] : []);

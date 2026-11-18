@@ -949,6 +949,7 @@ step(function (next) {
     assert.strictEqual(r.remotes.folding, true);
     assert.deepEqual(r.remotes.selected, [{ id: 'A', title: 'Remote A', image: 'generic.png' }]);
     assert.strictEqual(r.remotes.unknown, 0);
+    assert.strictEqual(r.remotes.why, '', 'nothing to explain while it folds');
     rk.setRemoteKey('red', 'open', 'netflix', guard(function (s) {
       assert.ok(s.ok, s.error);
       rk.getRemoteKeys(guard(function (changed) {
@@ -960,12 +961,15 @@ step(function (next) {
           assert.ok(!withUnknown.keys.some(function (k) { return k.offRemote; }), 'an unknown remote in use folds nothing');
           assert.strictEqual(withUnknown.remotes.folding, false);
           assert.strictEqual(withUnknown.remotes.unknown, 1);
+          assert.strictEqual(withUnknown.remotes.why, 'unknown', 'says why: a remote not in the catalogue');
           selected = [{ id: 'U', title: 'Unfinished', complete: false, keys: { netflix: 'measured' } }];
           rk.getRemoteKeys(guard(function (unfinished) {
             assert.ok(!unfinished.keys.some(function (k) { return k.offRemote; }), 'nor does an unfinished list');
+            assert.strictEqual(unfinished.remotes.why, 'unfinished', 'says why: a list not finished');
             selected = [];
             rk.getRemoteKeys(guard(function (none) {
               assert.ok(!none.keys.some(function (k) { return k.offRemote; }), 'nor does no remote');
+              assert.strictEqual(none.remotes.why, 'none', 'says why: no remote known');
               rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir, detectRemotes: function () { throw new Error('lookup failed'); } });
               rk.getRemoteKeys(guard(function (failed) {
                 assert.ok(failed.ok && !failed.keys.some(function (k) { return k.offRemote; }), 'a lookup that fails folds nothing');
