@@ -119,6 +119,14 @@
               data-sidebar-set="hide" data-t="server.sidebar.hide">Hide</button>
           </div>
         </div>
+        <!-- Shown where the Server tab allows the glow; glow.js. -->
+        <div class="nav-pref-grp" id="nav-pref-glow" hidden>
+          <div class="nav-pref-lbl" data-t="server.glow.title">Screen glow</div>
+          <div class="theme-seg" role="group" aria-label="Screen glow" data-t-aria-label="server.glow.title">
+            <button type="button" data-glow-set="off" data-t="common.off">Off</button><button type="button"
+              data-glow-set="on" data-t="common.on">On</button>
+          </div>
+        </div>
         <div class="nav-pref-grp">
           <div class="nav-pref-lbl" data-t="server.language.title">Language</div>
           <!-- A list rather than buttons: one for each language would not fit the
@@ -1114,6 +1122,14 @@
     <div class="pv-sub" data-t="ss.video.where">The videos, their order and the captions are set on the Home tab, under Background.</div>
   </div>
 
+  <!-- The picture frame (id "art", lib/art): what it shows now, and its settings in their own dialog -->
+  <div class="ss-level-row" id="ss-art-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.art.now">Now showing</div>
+    <div class="ss-art-now" id="ss-art-now"></div>
+    <p class="prot-desc ss-art-summary" id="ss-art-summary"></p>
+    <div class="set-actions"><button type="button" class="pill idle" id="ss-frame-open" onclick="openFrameSettings()" data-t="ss.art.settings">Picture frame settings</button></div>
+  </div>
+
   <div class="ss-level-row" id="ss-entities-row" hidden>
     <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
     <div id="ss-entities-list"></div>
@@ -1350,12 +1366,17 @@
   <div class="tab-grp" id="inputs-grp-nosignal" hidden>
     <div class="pv-sec" data-t="ss.noSignal">No Signal screen</div>
     <div class="pv-sub apps-grp-d" data-t="inputs.noSignal.desc">What an input with nothing coming in shows.</div>
-    <div class="hm-grid hm-grid-3" id="inputs-nosignal-cards">
+    <div class="hm-grid hm-grid-4" id="inputs-nosignal-cards">
       <button type="button" class="hm-card" id="inputs-nosignal-lg" onclick="setNoSignal('lg')">&mdash;</button>
       <button type="button" class="hm-card" id="inputs-nosignal-plain" onclick="setNoSignal('plain')">&mdash;</button>
       <button type="button" class="hm-card" id="inputs-nosignal-icon" onclick="setNoSignal('icon')">&mdash;</button>
+      <button type="button" class="hm-card" id="inputs-nosignal-art" onclick="setNoSignal('art')" hidden>&mdash;</button>
     </div>
     <div class="pv-sub" id="inputs-nosignal-desc" hidden></div>
+    <div class="inputs-frame" id="inputs-frame" hidden>
+      <div class="ss-art-now" id="inputs-art-now"></div>
+      <div class="set-actions"><button type="button" class="pill idle" onclick="openFrameSettings()" data-t="ss.art.settings">Picture frame settings</button></div>
+    </div>
   </div>
 
   <div class="pv-note" id="inputs-none" hidden data-t="inputs.none">Nothing about this TV&rsquo;s inputs can be changed from here.</div>
@@ -1451,6 +1472,13 @@
         <div class="prot-desc" data-t="adv.homeAutoLaunch.desc">Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-autolaunch" onclick="toggleHomeAutoLaunch('home-autolaunch')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-reopen-wake-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.reopenWake">Reopen Home after a wake</div>
+        <div class="prot-desc" data-t="home.reopenWakeDesc">A few seconds after the TV wakes, Glasshouse Home is closed and opened again. On a C5 the remote stopped answering after a wake without it. Switch it off if the remote answers on this TV without it, and Home no longer goes away and comes back. webOS 11 only.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-reopen-wake" onclick="homeReopenWake()">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row" id="home-hide-lg-row" hidden>
       <div class="prot-main">
@@ -1609,13 +1637,6 @@
         <div class="prot-desc" data-t="home.showPointerDesc">Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-pointer" onclick="homeShow('showPointer')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
-        <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
@@ -1817,6 +1838,19 @@
   <div class="pv-g" data-home-sub="iptv" data-t="home.tv.title">Internet TV</div>
   <div class="sub" data-home-sub="iptv" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses, It is kept on the TV and never shown here again.</div>
   <div id="home-tv" data-home-sub="iptv"></div>
+  <!-- In a wrapper of its own: the table's grid rule outranks the one that
+       hides #home-more's sections for a launcher or Glasshouse Bar. -->
+  <div data-home-sub="iptv">
+    <div class="prot-table home-custom-table">
+      <div class="prot-row home-gh-row home-show-row" hidden>
+        <div class="prot-main">
+          <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
+          <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
+      </div>
+    </div>
+  </div>
 
   <div class="pv-g" data-home-sub="appearance" data-t="home.colours.title">Colours</div>
   <div class="sub" data-home-sub="appearance" data-t="home.colours.desc">The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.</div>
@@ -2363,6 +2397,14 @@
       </div>
       <div class="prot-row">
         <div class="prot-main">
+          <div class="prot-title" data-t="server.glow.title">Screen glow</div>
+          <div class="prot-desc" data-t="server.glow.desc">Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page.</div>
+          <div class="prot-desc" id="srv-glow-none" hidden data-t="server.glow.none">This TV has no screen capture service, so the glow is not offered here.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="srv-glow" onclick="toggleScreenGlowAllowed()">&mdash;</button></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
           <div class="prot-title" data-t="server.backup.title">Settings backup</div>
           <div class="prot-desc" data-t="server.backup.desc">Saves LG's sound, device, HDMI and ad settings, and Glasshouse's own, to a file. Restoring it, on this TV or another, sets those the TV has. Network access, MQTT and game settings are not included.</div>
           <div class="btns backup-btns">
@@ -2608,10 +2650,63 @@
 
 <footer>
   <span class="foot-tv" id="foot-tv" translate="no"></span>
-  <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
+  <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle glow-toggle" id="glow-toggle" hidden aria-pressed="false" onclick="toggleGlow()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="glow-halo" cx="12" cy="10" r="8"/><rect x="4.5" y="9" width="15" height="9.5" rx="1.5"/></svg></button><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
 </footer>
 
 <!-- Offered on load when "Update pop-up" is on in the Server tab; see offerUpdatePopup in ui/update.js. -->
+<!-- Picture frame settings: opened from the Screensaver and Inputs tabs, and from search.
+     A settings dialog (set-modal): a header that stays while the body scrolls,
+     and the dashboard's own groups and rows inside. -->
+<div id="frame-modal" class="modal-backdrop set-modal-backdrop" hidden onclick="if(event.target===this)closeFrameSettings()" onkeydown="if(event.key==='Escape')closeFrameSettings()">
+  <div class="modal-card set-modal" role="dialog" aria-modal="true" aria-labelledby="frame-modal-title" aria-describedby="frame-modal-sub">
+    <div class="set-modal-head">
+      <div class="set-modal-heading">
+        <h2 class="set-modal-title" id="frame-modal-title" data-t="ss.art.title">Picture frame</h2>
+        <p class="set-modal-sub" id="frame-modal-sub"></p>
+      </div>
+      <button type="button" class="pill idle" id="frame-modal-close" onclick="closeFrameSettings()" data-t="home.cardIconDoneBtn">Done</button>
+    </div>
+    <div class="set-modal-body">
+      <section class="set-sec" aria-labelledby="frame-sec-mine">
+        <h3 class="pv-g" id="frame-sec-mine" data-t="ss.art.mine">Your pictures</h3>
+        <div class="prot-table" id="ss-art-mine"></div>
+        <div class="ss-art-pics" id="ss-art-pics"></div>
+        <p class="set-note" id="ss-art-note" role="status" aria-live="polite"></p>
+        <input type="file" id="ss-art-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="ssArtPicked(this)">
+      </section>
+      <div id="ss-art-sources"></div>
+      <section class="set-sec" aria-labelledby="frame-sec-folders">
+        <h3 class="pv-g" id="frame-sec-folders" data-t="ss.art.folders">Network folders</h3>
+        <div class="prot-table" id="ss-art-folders"></div>
+        <div class="set-browse" id="ss-art-browse" hidden></div>
+      </section>
+      <section class="set-sec" aria-labelledby="frame-sec-show">
+        <h3 class="pv-g" id="frame-sec-show" data-t="ss.art.show">Showing them</h3>
+        <div class="prot-table">
+          <div class="prot-row">
+            <div class="prot-main"><label class="prot-title" for="ss-art-minutes" data-t="ss.art.timeTitle">Each picture shows for</label></div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-minutes" onchange="ssArtSave({ seconds: Number(this.value) })"></select></div>
+          </div>
+          <div class="prot-row">
+            <div class="prot-main">
+              <label class="prot-title" for="ss-art-fit" data-t="ss.art.fitTitle">Fit</label>
+              <div class="prot-desc" data-t="ss.art.fitDesc">The whole picture on black, or filling the screen with its edges cropped.</div>
+            </div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-fit" onchange="ssArtSave({ fit: this.value })"></select></div>
+          </div>
+          <div class="prot-row">
+            <div class="prot-main">
+              <label class="prot-title" for="ss-art-caption" data-t="ss.art.labelTitle">Label</label>
+              <div class="prot-desc" data-t="ss.art.labelDesc">The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way.</div>
+            </div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-caption" onchange="ssArtSave({ caption: this.value })"></select></div>
+          </div>
+        </div>
+      </section>
+      <p class="set-note" id="ss-art-where"></p>
+    </div>
+  </div>
+</div>
 <div id="updpop" class="modal-backdrop" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="updpop-title">
     <span class="updpop-st" data-t="server.popup.status">Update available</span>
@@ -2698,6 +2793,7 @@
 <script src="/assets/ui/storage.js"></script>
 <script src="/assets/ui/hdmi.js"></script>
 <script src="/assets/ui/sysinfo.js"></script>
+<script src="/assets/ui/glow.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>

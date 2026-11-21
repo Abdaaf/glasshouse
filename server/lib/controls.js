@@ -1352,7 +1352,7 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
-    // LG's No Signal screen: as LG made it, plain "No Signal", or disconnected cable icon.
+    // LG's No Signal screen: as LG made it, plain "No Signal", a disconnected cable icon, or Art's pictures.
     case 'plainNoSignal':
       return nosignal.set(value, cb);
 
@@ -1505,6 +1505,19 @@ function doControl(action, value, cb) {
         if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
         historyModule.setEnabled(historyOn);
         if (republishDiscoveryFn) republishDiscoveryFn();
+        cb(getUpdateSummary());
+      });
+
+    // Whether dashboards may light their page from the colours on screen.
+    case 'setScreenGlowAllowed':
+      if (!writeSettingsFn) return cb({ ok: false, error: 'settings cannot be saved' });
+      var glowOn = (value === true || value === 'on' || value === 'true');
+      return writeSettingsFn({ screenGlow: { allowed: glowOn } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) {
+          config.screenGlow = config.screenGlow || {};
+          config.screenGlow.allowed = glowOn;
+        }
         cb(getUpdateSummary());
       });
 

@@ -3406,6 +3406,22 @@ step('on webOS 11, Glasshouse Home is closed and opened again once after a wake,
   });
 });
 
+step('the Reopen Home after a wake switch off skips the reopening', function (done) {
+  start(null, webos11());
+  home.enable(function () {
+    home.setLayout({ reopenAfterWake: false }, function (r) {
+      assert.strictEqual(r.layout.reopenAfterWake, false, 'the switch is saved');
+      foreground(LG_HOME);
+      power(false);
+      power(true);
+      wait(4500, function () {
+        assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'skipped when switched off');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
 step('on webOS 11, an app opened after the wake, or a switch-off, cancels it; other webOS never does it', function (done) {
   start(null, webos11());
   home.enable(function () {
@@ -3509,6 +3525,31 @@ step('the end of the screen saver gives the view a first beat\'s wait, and a rea
       wait(200, function () {
         assert.deepEqual(tv.launched, [], 'slow to beat as the saver ends is not a hang');
         assert.ok(taken(), 'Glasshouse Home keeps its place');
+        wait(250, function () {
+          assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the saver, it is one');
+          done();
+        });
+      });
+    });
+  });
+});
+
+// A C2 (webOS 10.3.1): the view sent no beats under the screen saver, and
+// LG's Home, opened as if it had hung, ended the screen saver (#1605).
+step('a view silent under the screen saver is not a hang, and one still silent after it is', function (done) {
+  start(null, { beatGraceMs: 100, firstBeatGraceMs: 300 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    powerState('Active');
+    home.beat();
+    tv.launched = [];
+    powerState('Screen Saver');
+    wait(350, function () {
+      assert.deepEqual(tv.launched, [], 'no beats under the screen saver is not a hang');
+      assert.ok(taken(), 'Glasshouse Home keeps its place');
+      powerState('Active');
+      wait(200, function () {
+        assert.deepEqual(tv.launched, [], 'the end of the screen saver gives a first beat\'s wait');
         wait(250, function () {
           assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the saver, it is one');
           done();

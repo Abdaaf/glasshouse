@@ -2387,6 +2387,53 @@ async function visitHomeUpDown(browser, base, problems) {
   }
 }
 
+// The More apps grid holds fewer cards than icons a line; the keys follow the lines it shows.
+async function visitHomeFolderKeys(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home More apps keys: ' + e.message));
+  const apps = [];
+  for (let i = 0; i < 8; i++) apps.push({ id: 'app' + i, title: 'App ' + i });
+  const layout = { rows: ['app'], order: { app: [] }, hidden: { app: [] }, channels: [], appCards: true,
+    folder: apps.map(a => a.id), hintSeen: true, searchHintSeen: true };
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1, apps, channels: [], devices: [],
+      order: { app: apps.map(a => a.id) } });
+    if (url.pathname.endsWith('/now')) return reply({});
+    return reply({ ok: true, build: 'folderkeys', layoutVersion: 1 });
+  });
+  const focused = () => page.evaluate(() => {
+    const t = document.querySelector('#folderGrid .tile.focus');
+    if (!t) return null;
+    const r = t.getBoundingClientRect();
+    return { f: +t.getAttribute('data-f'), top: r.top, left: r.left, right: r.right };
+  });
+  const press = async key => { await page.keyboard.press(key); await page.waitForTimeout(400); };
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile.focus');
+    await press('Enter');
+    await page.waitForSelector('#folderGrid .tile.focus');
+    await press('ArrowRight');
+    const above = await focused();
+    await press('ArrowDown');
+    const below = await focused();
+    if (!above || !below || below.top <= above.top) problems.push('Home More apps keys: Down did not reach the next line of cards');
+    else if (Math.min(above.right, below.right) - Math.max(above.left, below.left) <= 0) {
+      problems.push('Home More apps keys: Down went to app ' + below.f + ', not the one under app ' + above.f);
+    }
+    await press('ArrowUp');
+    const back = await focused();
+    if (!back || !above || back.f !== above.f) problems.push('Home More apps keys: Up did not return to app ' + (above && above.f));
+    for (let i = 0; i < 9; i++) await press('ArrowRight');
+    const end = await focused(), first = await page.evaluate(() => document.querySelector('#folderGrid .tile').getBoundingClientRect().top);
+    if (!end || end.top !== first) problems.push('Home More apps keys: Right went past the end of the first line');
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeOrder(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('Home order: ' + e.message));
@@ -3736,6 +3783,11 @@ async function visitHomeInternetTv(browser, base, problems) {
     for (const code of list) for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: code, bubbles: true }));
   }, codes);
   const key = code => keys([code]);
+  // Back closes the band if it is up, then the player: the band shows itself on each channel change.
+  const leavePlayer = async () => {
+    if (/band/.test(await page.locator('#player').getAttribute('class'))) await key(461);
+    await key(461);
+  };
   const playing = () => page.locator('#pvVideo').dispatchEvent('playing');
   const fillsTile = () => page.evaluate(() => {
     const tile = document.querySelector('.row.active .tile.focus'), pv = document.getElementById('preview');
@@ -3777,7 +3829,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     const pendingOutput = page.waitForRequest(r => new URL(r.url()).pathname === '/api/iptv/output');
     await key(405);
     await pendingOutput;
-    await key(461);
+    await leavePlayer();
     await page.waitForFunction(() => !!document.getElementById('pvVideo').getAttribute('src'));
     await playing();
     await key(13);
@@ -3790,9 +3842,23 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (streams.length !== beforeLate) fail('a late format save reopened a player that had been left');
     holdOutput = false;
 
+    // OK shows and hides the band, whichever it was.
+    const bandUp = async () => /band/.test(await page.locator('#player').getAttribute('class'));
+    const wasUp = await bandUp();
     await key(13);
+    await page.waitForSelector(wasUp ? '#player:not(.band)' : '#player.band');
+    if (/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player opened the channel list, not the band');
+    await key(13);
+    await page.waitForSelector(wasUp ? '#player.band' : '#player:not(.band)');
+    if (await bandUp()) await key(13);
+    await page.waitForSelector('#player:not(.band)');
+    await key(37);
     await page.waitForSelector('#player.list');
-    if (!/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player did not open the channel list');
+    if (/band/.test(await page.locator('#player').getAttribute('class'))) fail('the band came up with the channel list');
+    await key(39);
+    await page.waitForSelector('#player:not(.list)');
+    await key(37);
+    await page.waitForSelector('#player.list');
     const releasedBefore = await page.evaluate(() => window.released);
     await key(40);
     await key(13);
@@ -3802,6 +3868,10 @@ async function visitHomeInternetTv(browser, base, problems) {
     const asked = trace.lastIndexOf('request x2'), playedNext = trace.lastIndexOf('play http://s.test/x2.m3u8');
     const releasedAt = trace.slice(0, asked).lastIndexOf('release'), lastOld = trace.slice(0, asked).lastIndexOf('play http://s.test/x1.m3u8');
     if (!(releasedAt > lastOld && asked > releasedAt && playedNext > asked)) fail('the channel change did not release, then ask, then play: ' + trace.slice(-6).join(', '));
+    await page.waitForSelector('#player.band');
+    await key(461);
+    await page.waitForSelector('#player:not(.band)');
+    if (!/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('Back with the band up left the player');
     await key(461);
     await page.waitForTimeout(300);
     if (/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the player');
@@ -3816,7 +3886,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.waitForTimeout(1500);
     if (streams.length !== before + 1) fail('OK during the preview\'s dwell opened ' + (streams.length - before) + ' streams');
     if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('a late preview timer took the player\'s picture back');
-    await key(461);
+    await leavePlayer();
     await page.waitForTimeout(300);
     await key(457);
     await page.waitForSelector('#guide .gc b');
@@ -3835,7 +3905,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(13);
     await waitUntil(page, () => streams.length > picked);
     if (streams[streams.length - 1] !== 'x2') fail('OK in the guide did not play the channel');
-    await key(461);
+    await leavePlayer();
     try { await page.waitForSelector('#stage.guiding #gBody .gr.focus', { timeout: 3000 }); }
     catch (e) { fail('Back from a channel picked in the guide did not go back to the guide'); }
     if (await guideRow() !== '1') fail('Back to the guide was not on the channel picked there');
@@ -3864,7 +3934,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     const full = await page.locator('#preview').boundingBox();
     if (!full || full.width < 1900 || full.height < 1060) fail('the tile preview did not fill the screen');
     if (streams.length !== beforeTile) fail('opening the tile preview reopened its stream');
-    await key(461);
+    await leavePlayer();
     await waitUntil(page, fillsTile);
     if (!await fillsTile()) fail('Back did not return the stream to its tile');
     if (streams.length !== beforeTile) fail('returning to the tile reopened its stream');
@@ -4159,6 +4229,109 @@ async function visitInputsAndRemote(browser, base, problems) {
     await page.locator('#tab-btn-remote').waitFor({ state: 'hidden' });
     if (await page.locator('#inputs-grp-bar').isVisible()) fail('the input bar is offered with no keys to open it');
     if (await page.locator('#inputs-grp-list').isVisible()) fail('Your inputs is shown with neither the input bar nor a Glasshouse launcher active');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
+/*
+ * Brightness key settings: a section of its own on the Remote tab, there only
+ * while a key is set to Brightness up or down. Brightness step and Level bar
+ * style are its rows, the style offering LG's bar, a horizontal one, a vertical
+ * one or no
+ * bar, and left out where the bar cannot be shown (webOS 11).
+ */
+async function visitBrightnessKeySettings(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Brightness key settings: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const state = { brightnessKey: false, bar: true, style: 'lg', step: 10 };
+  const writes = [];
+  const keysNow = () => [
+    { key: 'red', title: 'Red', action: state.brightnessKey ? 'open' : 'lg', id: state.brightnessKey ? 'action:brightnessUp' : '', opens: state.brightnessKey ? 'Brightness up' : '' },
+    { key: 'green', title: 'Green', action: 'lg' }
+  ];
+  try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
+    await page.route('**/api/apps', async route => {
+      // The page may close with this still on its way.
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = null;
+        apps.remoteKeys = { ok: true, supported: true, keys: keysNow(), choices: [],
+          brightnessStep: state.step, brightnessBar: state.bar, brightnessBarStyle: state.style };
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', async route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      const set = route.request().postDataJSON();
+      writes.push(set);
+      if (set.brightnessBarStyle !== undefined) state.style = set.brightnessBarStyle;
+      if (set.brightnessStep !== undefined) state.step = set.brightnessStep;
+      await route.fulfill({ json: { ok: true } });
+    });
+    const open = async () => {
+      await page.goto(base + '/?tab=remote');
+      await page.locator('#apps-rk-list .rk-key').first().waitFor();
+    };
+    const heading = page.locator('#apps-rk-list .rk-grp', { hasText: 'Brightness key settings' });
+    const stepSel = page.locator('#apps-rk-step');
+    const styleSel = page.locator('#apps-rk-bar-style');
+
+    // No key set to Brightness: no section, and none of its rows.
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section shows with no key set to Brightness');
+
+    // A key set to it: the section, its heading first, then the step and the style.
+    state.brightnessKey = true;
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible() || !await styleSel.isVisible()) fail('the step or the style row is missing from the section');
+    const [hy, sy, by] = await Promise.all([heading.boundingBox(), stepSel.boundingBox(), styleSel.boundingBox()]);
+    if (!(hy.y < sy.y && sy.y < by.y)) fail('the heading, the step and the style are not in that order');
+    if (await page.locator('#apps-rk-list .rk-key').last().boundingBox().then(b => b.y) > hy.y) fail('the section is above the keys');
+    const options = await styleSel.locator('option').evaluateAll(o => o.map(x => x.value));
+    if (JSON.stringify(options) !== JSON.stringify(['lg', 'horizontal', 'vertical', 'none'])) fail('the style offers ' + options + ', not lg, horizontal, vertical and none');
+    if (await styleSel.inputValue() !== 'lg') fail('the style does not start on the LG-style bar');
+
+    // Each choice is saved and comes back as chosen.
+    await styleSel.selectOption('none');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style') && document.querySelector('#apps-rk-bar-style').value === 'none');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'none' })) fail('choosing No bar did not save it');
+    await styleSel.selectOption('horizontal');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'horizontal');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'horizontal' })) fail('choosing the horizontal bar did not save it');
+    await styleSel.selectOption('vertical');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'vertical');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'vertical' })) fail('choosing the vertical bar did not save it');
+    await stepSel.selectOption('15');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-step').value === '15');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessStep: 15 })) fail('choosing a step did not save it');
+
+    // Where the bar cannot be shown, the step is left in the section alone.
+    state.bar = false;
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible()) fail('the step is missing where the bar cannot be shown');
+    if (await styleSel.count()) fail('the style is offered where the bar cannot be shown');
+
+    // At phone width the section stays inside the page.
+    state.bar = true;
+    await page.setViewportSize({ width: 390, height: 800 });
+    await open();
+    await heading.waitFor();
+    if (!await styleSel.isVisible()) fail('the style row is not visible at phone width');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('the section makes the page scroll sideways at phone width');
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // The key put back as LG has it: the section goes.
+    state.brightnessKey = false;
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section stays with no key set to Brightness');
   } catch (e) {
     fail(e.message);
   } finally {
@@ -4712,10 +4885,10 @@ async function visitRemoteView(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.157.1';
+var TVWEB_VERSION = '0.158.1';
 
 var http = require('http');
 var fs = require('fs');
@@ -136,6 +136,7 @@ var history = require('./lib/history');
 var perfHistory = require('./lib/perfhistory');
 var storageScan = require('./lib/storagescan');
 var sysinfo = require('./lib/sysinfo');
+var screenColour = require('./lib/screencolour');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
@@ -339,6 +340,15 @@ var CONFIG = {
    */
   history: {
     enabled: false
+  },
+
+  /*
+   * The dashboard's screen glow: whether a dashboard may read the colours on
+   * screen (lib/screencolour.js) to light its page. Each browser switches the
+   * glow on for itself; off here, none can.
+   */
+  screenGlow: {
+    allowed: true
   },
 
   /*
@@ -584,6 +594,9 @@ game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
 appHosts.init({});
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, appHosts: CLI_MODE ? null : appHosts });
 oled.init({ luna: luna, config: CONFIG });
+screenColour.init({ luna: luna });
+// Which capture service the TV has, asked once, a little after start-up.
+if (!CLI_MODE) setTimeout(function () { screenColour.probe(); }, 15000);
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
 iconServer.init({ config: CONFIG, apps: appsModule, iptv: iptv });
@@ -687,8 +700,13 @@ screensavers.init({
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
   watching: function () { return !!(iptv && iptv.watching()); } });
+// The Art screen saver's settings and the paintings it fetched ahead.
+require('./lib/art').init({
+  // The remote's left and right step the pictures on the No Signal screen.
+  watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('art', on); }
+});
 // A mount does not outlive a reboot: the plain No Signal screen is mounted again.
-nosignal.init({ luna: luna });
+nosignal.init({ luna: luna, config: CONFIG });
 nosignal.apply();
 telemetry.init({
   luna: luna,
@@ -787,6 +805,7 @@ remotebuttons.init({
   },
   onAnyKey: function (code) {
     screensavers.keyPressed(code);
+    require('./lib/art').keyPressed(code);
   },
   onPointer: function () {
     screensavers.pointerUsed();
@@ -1100,6 +1119,7 @@ routes.init({
   perfHistory: perfHistory,
   storageScan: storageScan,
   sysinfo: sysinfo,
+  screenColour: screenColour,
   power: power,
   sshKeys: sshKeys,
   screentime: screentime,

@@ -27,6 +27,18 @@
   // Curated OLED protection entries ensure instant discovery regardless of fetch state.
   const CURATED_ITEMS = [
     {
+      // A dialog, opened from the Screensaver and Inputs tabs: opened from here too.
+      key: 'frame:settings',
+      title: 'Picture frame settings',
+      tab: 'screensaver',
+      kind: 'setting',
+      aliases: ['picture frame', 'photo frame', 'digital frame', 'photos', 'pictures', 'slideshow', 'art', 'art mode', 'gallery', 'paintings', 'museum', 'space', 'hubble', 'webb', 'nasa', 'wikimedia', 'nas', 'dlna', 'network folder', 'upload pictures'],
+      searchText: 'Picture frame settings Your pictures, photographs, space and paintings, network folders, how often a new picture comes',
+      selector: '#ss-frame-open',
+      fallbackId: 'ss-list',
+      run: function () { if (typeof openFrameSettings === 'function') openFrameSettings(); }
+    },
+    {
       key: 'oled:gsr',
       title: 'Global Stress Reduction (GSR)',
       tab: 'oledcare',
@@ -236,7 +248,8 @@
         searchText: c.searchText,
         aliases: c.aliases,
         target,
-        detail: target ? target.closest('details') : null
+        detail: target ? target.closest('details') : null,
+        run: c.run
       });
     });
   }
@@ -416,6 +429,38 @@
     indexLogLines(seen);
     indexSettings(seen);
     indexControls(seen);
+    indexPreferences(seen);
+  }
+
+  // 7. The sidebar's Preferences: this browser's own choices, on no tab.
+  const PREF_ALIASES = {
+    'server.theme.title': ['dark mode', 'light mode', 'appearance', 'colours', 'colors'],
+    'server.sidebar.title': ['menu', 'navigation', 'hide sidebar'],
+    'server.language.title': ['translation', 'locale'],
+    'server.glow.title': ['glow', 'ambient', 'ambilight', 'background light', 'colour from the tv', 'color from the tv']
+  };
+  function indexPreferences(seen) {
+    document.querySelectorAll('#nav-pref .nav-pref-grp').forEach(grp => {
+      if (grp.hidden || getComputedStyle(grp).display === 'none') return;
+      const lbl = grp.querySelector('.nav-pref-lbl');
+      const target = grp.querySelector('button, select');
+      if (!lbl || !target) return;
+      const id = lbl.getAttribute('data-t') || lbl.textContent;
+      const key = 'pref:' + id;
+      if (seen[key]) return;
+      seen[key] = true;
+      index.push({
+        key,
+        title: lbl.textContent.replace(/\s+/g, ' ').trim(),
+        kind: 'setting',
+        tab: null,
+        tabTitle: t('nav.pref', 'Preferences'),
+        searchText: grp.textContent.replace(/\s+/g, ' ').trim(),
+        aliases: PREF_ALIASES[id] || [],
+        target,
+        detail: q('nav-pref')
+      });
+    });
   }
 
   // Scoring function with low cyclomatic complexity: flat score levels per match tier.
@@ -465,7 +510,11 @@
   function openItem(item) {
     if (!item) return;
     if (item.tab && typeof showTab === 'function') showTab(item.tab);
+    // One that opens a dialog rather than pointing at a row.
+    if (item.run) { closeSearch(false); item.run(); return; }
     if (item.detail) item.detail.open = true;
+    // A preference is in the sidebar, which on a phone slides in.
+    if (item.target && item.target.closest && item.target.closest('.sidenav') && typeof openNav === 'function') openNav();
     const homeSub = item.target && item.target.closest ? item.target.closest('[data-home-sub]') : null;
     if (homeSub && typeof setHomeSubView === 'function') setHomeSubView(homeSub.getAttribute('data-home-sub'));
     const metricsSub = item.target && item.target.closest ? item.target.closest('[data-metrics-sub]') : null;

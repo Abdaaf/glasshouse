@@ -1556,6 +1556,54 @@ Each is null where the TV does not give it, or gives a placeholder. nyx's
 power-on counts (see [Why the TV powered on](#why-the-tv-powered-on)). The
 view shows a row only for a value it has, as models and webOS releases differ.
 
+## Screen glow
+
+`server/lib/screencolour.js` answers `GET /api/screen-colour` with the colours
+on screen, never a picture. It captures the screen with LG's
+`executeOneShot` as a 64x36 BMP (`method: DISPLAY`, which includes HDMI and
+app video), reads the pixels and deletes the file. The service is
+`com.webos.service.capture` on webOS 9 (a C2) and `com.webos.service.tv.capture`
+on webOS 4 (a B8); the first to answer is kept. The answer is the average
+colour, the brightness from 0 to 1, and an accent for each half: the most
+present vivid hue there, in twelve hue bands with each pixel counted by its
+saturation and brightness, or the half's average where nothing is vivid. A
+near-black screen has no accent. One capture serves every request within
+1.5 s.
+
+Which service the TV has is asked once, 15 s after start-up, without a
+capture: `executeOneShot` with no path. A service that is there refuses the
+request (`Invalid argument` on a B8, `ERROR_NOT_ENOUGH_MEMORY` on a C2), and
+the bus answers `Service does not exist` for one that is not. With neither,
+the Server tab's summary has `screenGlowSupported: false`, the route answers
+`{ ok: false, unsupported: true }`, and the dashboard hides the glow's
+switches and says why on the Server tab. A capture that finds both missing
+counts the same. A service that does not answer leaves the question open.
+
+A capture takes about 0.2 s on a C2 and 0.7 s on a B8, mostly the capture
+hardware: one every 3 s added under 1% to a B8's CPU. With no signal on an
+HDMI input the picture is black, and `method: VIDEO` answers
+`REFUSED_PERMISSION_DENIED` until a signal arrives. Protected video captures
+black.
+
+`assets/ui/glow.js` reads it while its browser has the glow on, the Server
+tab allows it (`screenGlow.allowed`, on unless switched off), the page shows
+and the header says the screen is on, and not while the stats'
+`signal_format.game_mode` is set. While PicCap is capturing or Hue Sync is
+streaming, which the route asks as `/api/stats` does for the Ambient Light tab,
+the route answers `{ ok: false, busy }` without a capture, as theirs and ours
+would share the capture hardware, and the glow fades until it stops. After
+three failed reads in a row, as while the server restarts for an update, it
+fades and reads every 30 s rather than every 3 s, and comes back by itself;
+it used to give up for the rest of the visit. Each side's hue is raised to a fixed
+brightness, at least half saturated, so a dim picture still gives a colour;
+the picture's brightness sets how strong it shows. The two colours are
+registered custom properties, faded on the root. With the glow on, the body's
+background is transparent, so the fixed layer behind the page shows over the
+root's. The light is one value, `--glow-paint`, sized in the window's units:
+the layer behind the page paints it, and the sidebar paints it as a
+background fixed to the window, so it runs across the sidebar's edge, and
+into the menu that slides in on a phone, without a seam.
+
 ---
 
 ## Counting watch time
@@ -2188,6 +2236,7 @@ The debloating engine (`server/lib/services.js`) manages background system daemo
 
 Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-mounted over `/usr/palm/applications/com.webos.app.screensaver`.
 
+* **Picture frame screen saver** (id `art`, so settings and files keep their `art` names): `lib/art.js` keeps the settings (`/var/lib/tvweb/art.json`), the owner's pictures and the paintings fetched ahead. The QML asks `/api/art/next` for each picture, through the `art` placeholder (`__TVWEB_ART__`, only for Glasshouse's own, as it carries the token), and is handed an address on this server, `/api/art/image`, never the museum's: Qt's network stack on webOS 4 cannot reach most HTTPS sites, so the TV's curl or wget (`lib/fetch.js`) fetches each painting and the file is checked as a JPEG before it is served. The answer also carries the minutes, fit and label settings, so a change applies without restaging. A collection is a query of the Cleveland Museum of Art's API (`cc0=1&has_image=1&type=Painting` and a department) at a random offset; its print image, 3400 pixels on the long side, is decoded at 1920 × 1080 by the `Image`'s `sourceSize`. Two are fetched ahead (`art-cache/queue.json`); the one on screen and the one fading out are kept, and the last 60 are not picked again. A Rijksmuseum collection is a year span: a random year's paintings from `data.rijksmuseum.nl/search/collection?type=painting&imageAvailable=true&creationDate=<year>`, and one object read as Linked Art from `id.rijksmuseum.nl`, whose `subject_of` carries a IIIF address on `iiif.micr.io` where it is marked public domain; it is fetched at `full/!2400,1400`. The title and date are its English names; the painter is `carried_out_by`, or for an attribution the English creator statement. Network folders are `lib/dlna.js`: an SSDP M-SEARCH for `MediaServer:1`, the description at each LOCATION read for the ContentDirectory control address, and `Browse` with `BrowseDirectChildren` for a folder, its DIDL-Lite read for containers and `object.item.imageItem` items with a JPEG `res`. Only private IPv4 and link-local addresses over HTTP are spoken to. A folder is saved with the server's UDN and description address; where the server no longer answers there, or answers with another UDN, it is looked for again by its UDN. A folder's listing is kept for 10 minutes. Pictures fetched may be up to 8192 pixels on a side and 12 MB, decoded at the screen's size; `autoTransform` turns a photo as its EXIF says, so the saver's `Frame.qml` imports QtQuick 2.5. ESA/Webb and ESA/Hubble have no API. Webb's collection is its `pictureofthemonth`, `nebulae` and `galaxies` categories, with titles of diagrams, annotated ("compass") versions, illustrations and telescope pictures left out; Hubble's is its Picture of the Week (`/images/potw/`, 20 a page, sized from each image's page), as its archive categories hold test charts and diagrams. A random page of an archive category (`/images/archive/category/<cat>/page/<n>/`, 50 images in a `var images = [...]` list with their sizes) gives an image of a shape for the screen, its own page gives its credit line (`class="credit"`), shown whole or the image skipped, and `cdn.<site>/archives/images/publicationjpg/<id>.jpg`, 4000 pixels on its long side, is fetched. Wikimedia Commons is searched with `deepcat:"Featured pictures of <topic>" filetype:bitmap` at a random offset (search stops at 10,000), ten at a time with their `imageinfo` and `extmetadata`; a JPEG whose `License` is `pd`, `cc0`, `cc-by-*` or `cc-by-sa-*` is taken, at its 1920-pixel thumbnail (Wikimedia serves set widths). Pictures whose licence asks for credit carry `mustCredit`, and both views keep a small credit line up while the label is not. NASA's own image library was left out: its records mix public domain with third-party processing under its own copyright, with nothing reliable to tell them apart, and ESA's archives carry its telescopes' images under one licence. The Met was tried and left out: its image server answers non-browsers with a bot check. On a B8 the screen saver takes about 0.3% of one core and 41 MB. Previous and Next: the last five shown are kept (`history`, their files with them), and `go(dir)` raises a command sequence that the screen saver and the No Signal screen ask `/api/art/command` for every 1.5 s; a new one asks `/api/art/next?dir=prev|next`. A view asking within 6 s counts as on screen, which the dashboard shows. While the No Signal screen asks, `remotebuttons` is wanted as `art` and KEY_LEFT (105) and KEY_RIGHT (106) step it; a screen saver cannot be stepped from the remote, as tvpower ends it on the key.
 * **Screen saver folders**: each screen saver is a folder with a `saver.json`, read by `lib/screensavers.js` from `assets/screensavers` (Glasshouse's own) and `/var/lib/tvweb/screensavers` (added on the TV, which an update leaves alone). The folder's name gives the id; for an added one Glasshouse prefixes the id, not the folder, with `user-`, so it never clashes with one of Glasshouse's. The folders are read again whenever the tab asks for the list or a screen saver is picked. Picking one copies its whole folder into the staged `qml/`, its main file as `main.qml`, filling in only the placeholders its `uses` names. Home Assistant's select is built from the same list when discovery is published. The format is in [SCREENSAVER-DESIGN.md](development/SCREENSAVER-DESIGN.md#screen-saver-folders).
 
 * **Homebrew apps' screen savers**: an installed app in `/media/developer/apps/usr/palm/applications` with `assets/screensaver-main.qml` (Custom Screensaver, both Aerial apps) or `assets/screensaver.qml` (Idlegif) is listed as `app-` and its app id, named after the app, its QML checked like an added one's. These apps bind-mount that file over LG's `qml/main.qml` themselves, which does nothing where LG's screen saver is Flutter (webOS 10 and later), and picking anything here unmounts it (#1067). Picked here, only the QML is staged: each loads its other files by their full path in its own folder or `/var/lib/webosbrew`. A marker naming one whose app has gone puts LG's back at the next restage, at start or after an app is removed from the Apps tab.

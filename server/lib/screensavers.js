@@ -24,6 +24,7 @@ var names = require('./names');
 var saverPowerOff = require('./saverpoweroff');
 var qmlcheck = require('./qmlcheck');
 var homeWallpapers = require('./home-wallpapers');
+var art = require('./art');
 
 var SCREENSAVER_APP_ID = 'com.webos.app.screensaver';
 var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
@@ -131,7 +132,7 @@ var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
 // "video-busy" is the address of videoBusy's answer, for a saver that plays video.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -257,6 +258,10 @@ function readSaver(root, name) {
   // The stats address carries the dashboard's access token.
   if (!root.builtin && uses.indexOf('stats') !== -1) {
     return problem(msg('srv.saver.noStats', 'It asks for the TV\'s readings, which only Glasshouse\'s own screen savers are given.'));
+  }
+  // So does the address of Art's pictures.
+  if (!root.builtin && uses.indexOf('art') !== -1) {
+    return problem(msg('srv.saver.noArt', 'It asks for the picture frame\'s pictures, which only Glasshouse\'s own screen savers are given.'));
   }
   if (m.choices !== undefined) {
     var choices = readChoices(m.choices, id);
@@ -880,6 +885,8 @@ function init(opts) {
   launchedDirectly = false;
   launchGeneration++;
   closeCallbacks = [];
+  stopFrontWatch();
+  frontPollMs = opts.frontPollMs !== undefined ? opts.frontPollMs : FRONT_POLL_MS;
   randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
   wasInScreenSaver = false;
   saverStartedAt = 0;
@@ -1327,6 +1334,7 @@ function screensaverList() {
       colors: hasColor ? screensaverColorOptions() : undefined,
       // The Video saver's clock, weather and captions, kept with Home's playlist.
       videoStyle: e.id === 'video' ? homeWallpapers.videoSources().style : undefined,
+      art: e.id === 'art' ? art.status() : undefined,
       // Home Assistant entities declared by the saver, with effective overrides.
       entities: e.entities ? Object.keys(e.entities).map(function (k) {
         var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
@@ -1635,6 +1643,11 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  // Art's next picture, asked for each time; the address carries the token.
+  if (e.uses.indexOf('art') !== -1) {
+    var artUrl = 'http://127.0.0.1:' + port + '/api/art/next' + (token ? '?k=' + encodeURIComponent(token) : '');
+    qml = qml.replace(/__TVWEB_ART__/g, function () { return artUrl; });
+  }
   if (e.uses.indexOf('videos') !== -1) {
     var videoJson = JSON.stringify(homeWallpapers.videoSources()).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
     qml = qml.replace(/__TVWEB_VIDEOS__/g, function () { return videoJson; });
@@ -1973,6 +1986,51 @@ function launchedRunning(cb) {
   screensaverRunning(function (running) { cb(running !== false); });
 }
 
+/*
+ * The app in front, watched while a screen saver launched directly shows. A
+ * G3 (webOS 10.3) put HDMI 2 in front as a PS5 woke it over HDMI-CEC, with
+ * the screen saver still drawn over it and holding the video decoder: no key
+ * was pressed, so nothing closed it, and the input showed only after the
+ * screen saver closed. Any other app or input coming to the front closes it.
+ * sam's front stays what was there before (Home) while it shows.
+ */
+var FRONT_POLL_MS = 1000;
+var frontPollMs = FRONT_POLL_MS;
+var frontTimer = null;
+var frontUnder = null;
+
+function stopFrontWatch() {
+  if (frontTimer) clearTimeout(frontTimer);
+  frontTimer = null;
+  frontUnder = null;
+}
+
+function startFrontWatch() {
+  stopFrontWatch();
+  var generation = launchGeneration;
+  // The first look, at once, is what is under it.
+  (function look(delay) {
+    frontTimer = setTimeout(function () {
+      if (!launchedDirectly || generation !== launchGeneration || !lunaFn) return;
+      lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+        if (!launchedDirectly || generation !== launchGeneration) return;
+        var id = fg && fg.returnValue !== false && fg.appId;
+        if (id && id !== SCREENSAVER_APP_ID) {
+          if (frontUnder === null) frontUnder = id;
+          else if (id !== frontUnder) {
+            console.log('screensaver: ' + inputKeyFn(id) + ' came to the front; closing the screen saver');
+            frontUnder = null;
+            return closeLaunched(function () {});
+          }
+        }
+        look(frontPollMs);
+      });
+    }, delay);
+    // Not what keeps the server, or a test, running.
+    if (frontTimer.unref) frontTimer.unref();
+  })(0);
+}
+
 function setLaunched(on) {
   var was = launchedDirectly;
   if (on) {
@@ -1988,6 +2046,8 @@ function setLaunched(on) {
   launchedDirectly = on;
   launchGeneration++;
   watchKeysFn(on);
+  if (on) startFrontWatch();
+  else stopFrontWatch();
   for (var i = 0; i < launchedListeners.length; i++) launchedListeners[i](on);
 }
 

@@ -316,6 +316,17 @@ var PARTS = [
     write: function (v, cb) { remoteKeys.setBrightnessStep(v, cb); }
   },
   {
+    // How the level bar of a Brightness key looks, 'lg', 'horizontal', 'vertical' or 'none', kept with the remote keys.
+    id: 'brightnessBarStyle',
+    valid: function (v) { return v === 'lg' || v === 'horizontal' || v === 'vertical' || v === 'none'; },
+    read: function (cb) {
+      remoteKeys.getRemoteKeys(function (r) {
+        cb(r && r.supported && typeof r.brightnessBarStyle === 'string' ? r.brightnessBarStyle : undefined);
+      });
+    },
+    write: function (v, cb) { remoteKeys.setBrightnessBarStyle(v, cb); }
+  },
+  {
     // { '1'..'9': what the key opens, '' for nothing }.
     id: 'quickAccess',
     action: 'quickAccess',
@@ -413,7 +424,7 @@ var NOT_CARRIED = {
   // The adBlock part's control under its other names.
   adblock: 'carried', toggleAdBlock: 'carried',
   updateAutoCheck: 'carried', setPrometheusEnabled: 'carried', setNtpServer: 'carried', setNtpEnabled: 'carried',
-  setHistoryEnabled: 'carried', setBackupDaily: 'carried',
+  setHistoryEnabled: 'carried', setBackupDaily: 'carried', setScreenGlowAllowed: 'carried',
   // One of lgsettings.js's rows: carried by its section.
   lgSetting: 'carried'
 };

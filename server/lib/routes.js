@@ -14,6 +14,7 @@ var listenDualStack = require('./util').listenDualStack;
 var allocBuffer = require('./util').allocBuffer;
 var hostPort = require('./util').hostPort;
 var sendIconFile = require('./iconserver').sendIconFile;
+var artModule = require('./art');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var unlinkQuiet = require('./util').unlinkQuiet;
 var existsQuiet = require('./util').existsQuiet;
@@ -126,6 +127,8 @@ var perfHistoryModule = null;
 var storageScanModule = null;
 /** @type {typeof import('./sysinfo')} */
 var sysinfoModule = null;
+/** @type {typeof import('./screencolour')} */
+var screenColourModule = null;
 /** @type {typeof import('./power')} */
 var powerModule = null;
 
@@ -419,6 +422,11 @@ function lanOrigin() {
   if (!networkOpen()) return null;
   var ip4 = localAddress4();
   return ip4 ? 'http://' + hostPort(ip4, config.port) : null;
+}
+
+// Off only where switched off on the Server tab.
+function screenGlowAllowed() {
+  return !(config.screenGlow && config.screenGlow.allowed === false);
 }
 
 function prometheusEnabled() {
@@ -753,6 +761,9 @@ function updateSummary() {
   s.isWebos10 = !!(screensaversModule && screensaversModule.experimental && screensaversModule.experimental());
   s.homeLayout = homeScreenModule ? homeScreenModule.experimental() : null;
   s.prometheusEnabled = prometheusEnabled();
+  s.screenGlowAllowed = screenGlowAllowed();
+  // Where the TV has no capture service, the glow is not offered; null while unknown.
+  s.screenGlowSupported = screenColourModule ? screenColourModule.supported() : false;
   s.clockHour12 = clockHour12();
   s.watchHistory = historyModule ? historyModule.status() : null;
   s.backupDaily = backupModule ? backupModule.dailyStatus() : null;
@@ -1833,6 +1844,66 @@ function handleRequest(req, res) {
     return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
   }
 
+  /* The Art screen saver's pictures (lib/art). next is what the screen saver
+     asks for each picture; image serves one, the owner's or one fetched. */
+  // Whether Next or Previous was asked for, polled by the views on screen.
+  if (pathname === '/api/art/command' && req.method === 'GET') {
+    return send(res, 200, JSON.stringify(artModule.poll(String(u.query && u.query.view || ''))));
+  }
+  if (pathname === '/api/art/next' && req.method === 'GET') {
+    var artDir = String(u.query && u.query.dir || '');
+    return artModule.next(function (r) {
+      if (r.ok) {
+        r.image = '/api/art/image?id=' + encodeURIComponent(r.id) + (config.token ? '&k=' + encodeURIComponent(config.token) : '');
+      }
+      send(res, 200, JSON.stringify(r));
+    }, artDir === 'prev' ? 'prev' : 'next');
+  }
+  if (pathname === '/api/art/image' && req.method === 'GET') {
+    var artFile = artModule.image(String(u.query && u.query.id || ''));
+    if (!artFile) return send(res, 404, JSON.stringify({ ok: false, error: 'no such picture' }));
+    return sendIconFile(req, res, artFile, function (status, error) {
+      send(res, status, JSON.stringify({ ok: false, error: error }));
+    }, 'image/jpeg');
+  }
+  // Media servers on the network, and one's folders, to add one to Art.
+  if (pathname === '/api/art/servers' && req.method === 'GET') {
+    return artModule.findServers(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+  if (pathname === '/api/art/browse' && req.method === 'GET') {
+    return artModule.browseFolder(String(u.query && u.query.udn || ''), String(u.query && u.query.id || '0'), function (r) {
+      send(res, r.ok ? 200 : 400, JSON.stringify(r));
+    });
+  }
+  if (pathname === '/api/art' && req.method === 'GET') {
+    var artStatus = artModule.status();
+    artStatus.writable = !!config.allowControl || fromTV(req);
+    return send(res, 200, JSON.stringify(artStatus));
+  }
+  if ((pathname === '/api/art' || pathname === '/api/art/upload') && req.method === 'POST') {
+    if (!config.allowControl && !fromTV(req)) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (pathname === '/api/art/upload') {
+      if (!postGuard(req, res, 'image/jpeg', true)) return;
+      return artModule.upload(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        send(res, 200, JSON.stringify(r));
+      });
+    }
+    return readJsonBody(req, res, function (body) {
+      function done(r) { send(res, r && r.ok === false ? 400 : 200, JSON.stringify(r)); }
+      if (body && body.removeAll === true) return artModule.remove(undefined, done);
+      if (body && body.addFolder && typeof body.addFolder === 'object') {
+        return artModule.addFolder(String(body.addFolder.udn || ''), String(body.addFolder.id || ''), String(body.addFolder.title || ''), done);
+      }
+      if (body && typeof body.removeFolder === 'string') return artModule.removeFolder(body.removeFolder, done);
+      if (body && typeof body.go === 'string') return artModule.go(body.go, done);
+      if (body && typeof body.remove === 'string') return artModule.remove(body.remove, done);
+      artModule.save(body && body.settings, done);
+    }, 4096);
+  }
+
   if (pathname === '/api/screensaver') {
     var ssList = screensaversModule.screensaverList();
     ssList.noSignal = nosignal.status();
@@ -2237,6 +2308,23 @@ function handleRequest(req, res) {
     si.powerOns = powerModule && typeof powerModule.powerOns === 'function' ? powerModule.powerOns() : null;
     return send(res, 200, JSON.stringify(si));
   }
+  // The colours on screen, for the dashboard's glow: colours only, no picture.
+  if (pathname === '/api/screen-colour' && screenColourModule) {
+    if (!screenGlowAllowed()) return send(res, 200, JSON.stringify({ ok: false, off: true }));
+    /*
+     * PicCap and Hue Sync stream from the TV's capture hardware themselves, and
+     * a capture of ours beside theirs could stall their stream. While either is
+     * capturing, the glow waits. Their status is asked as the stats ask it for
+     * the Ambient Light tab, from the same caches.
+     */
+    return piccapStatusFn(function (pc) {
+      huesyncStatusFn(function (hs) {
+        var busy = pc && pc.running ? 'piccap' : hs && hs.streaming ? 'huesync' : null;
+        if (busy) return send(res, 200, JSON.stringify({ ok: false, busy: busy }));
+        screenColourModule.read(function (c) { send(res, 200, JSON.stringify(c)); });
+      });
+    });
+  }
   if (pathname === '/api/storage' && storageScanModule) {
     // A rescan only by POST, so a page load never forces one.
     return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
@@ -2545,6 +2633,11 @@ function handleRequest(req, res) {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
     return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
   }
+  // The bar's page asks for it while a Brightness key is held.
+  if (pathname === '/api/remotekeys/brightness' && req.method === 'GET') {
+    if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: false }));
+    return remoteKeysModule.getBrightness(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
   if (pathname === '/api/remotekeys' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -2553,6 +2646,11 @@ function handleRequest(req, res) {
       if (!remoteKeysModule) return send(res, 503, JSON.stringify({ ok: false, error: 'remote keys module unavailable' }));
       if (body && body.brightnessStep !== undefined) {
         return remoteKeysModule.setBrightnessStep(body.brightnessStep, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      if (body && body.brightnessBarStyle !== undefined) {
+        return remoteKeysModule.setBrightnessBarStyle(body.brightnessBarStyle, function (r) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
         });
       }
@@ -2818,6 +2916,7 @@ function init(opts) {
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
   if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sysinfo) sysinfoModule = opts.sysinfo;
+  if (opts.screenColour) screenColourModule = opts.screenColour;
   if (opts.power) powerModule = opts.power;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
