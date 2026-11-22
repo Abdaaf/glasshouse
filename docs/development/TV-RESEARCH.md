@@ -1634,6 +1634,14 @@ devices carry no model: `LGE M-RCU - Builtin [0]` to `[2]`, vendor and product 0
 awake, its firmware, but no name. The name is the remote's own; nothing checks it against the
 hardware.
 
+## The ? button in the key filters (C5, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0) with an MR25GA, LG's `appLaunch.js` in
+`/usr/lib/qt5/qml/KeyFilters/` names the ? button as `WebOS.Key_webOS_Multikey`: a press calls
+`launchAccessibility`, and a 2 s hold, timed by `longPressTimer`, `launchAccessibilityOverlay`,
+unless `settingsService.disableAccessibilityLaunch`. The key reaches Linux as code 1124,
+`IR_KEY_MULTIKEY`. No filter names the Home Hub button (`IR_KEY_INPUT_HUB`, code 1023).
+
 ## MR25GA battery (C5, webOS 11.2)
 
 OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:

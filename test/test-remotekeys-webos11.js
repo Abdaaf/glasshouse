@@ -661,9 +661,10 @@ step('the AI button is not offered without the voice assistant\'s service', func
   });
 });
 
-step('the JavaScript filter leaves out the keys only webOS 11 offers', function (next) {
+step('the JavaScript filter leaves out the keys only webOS 11 offers, and has the ? button for older firmware', function (next) {
   var src = rk.filterSource();
-  ['homehub', 'ai', 'multikey', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
+  ['homehub', 'ai', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
+  assert.ok(src.indexOf('codes["multikey"] = WebOS.Key_webOS_Multikey') !== -1, 'the ? button where a filter names it');
   next();
 });
 

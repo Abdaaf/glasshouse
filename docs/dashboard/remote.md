@@ -18,7 +18,7 @@ Configures what individual remote buttons do when pressed. Each key appears as a
 
 On webOS 11, **Ivi**, **Okko**, **Kinopoisk** and **LG Shop** are also offered under Streaming buttons when LG enables their assignments. They can open an app or input, do nothing, or return to **As LG has it**. A listed button may be absent from the physical remote.
 
-Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot be reassigned. **Channel up** and **Channel down** can be reassigned where the TV's key filters name them; a channel key that is set no longer changes channel, so **As LG has it** brings that back. The microphone button can be reassigned; setting it to another action overrides both press and hold, replacing LG's voice control until returned to **As LG has it**.
+Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot be reassigned. **Channel up** and **Channel down** can be reassigned where the TV's key filters name them; a channel key that is set no longer changes channel, so **As LG has it** brings that back. The microphone button can be reassigned; setting it to another action overrides both press and hold, replacing LG's voice control until returned to **As LG has it**. The **?** button can be reassigned where the TV's key filters name it (on webOS 10, LG opens its accessibility menu from it); set, it no longer opens that menu on a press or its overlay on a hold.
 
 ## Available actions
 
@@ -48,7 +48,7 @@ The **Your remote** section at the top of the tab says which remote the keys bel
 
 When nothing is folded, the section says why: no remote was detected, a remote that is not in the list is in use, or the list of that remote's buttons is not finished. The choice is kept with the key settings, nothing on the TV changes with it, and a [settings backup](server.md) carries it.
 
-Where the remote in use is one the [Remotes](../remotes.md) page has a finished button list for, the tab folds the keys that remote does not have into **Buttons on other remotes**, closed until opened. The remote is the one the TV is paired with, or one seen in use in the last 30 days, and the folding applies only if every such remote is listed there with a finished list: with a remote that is not listed, or whose list is not finished, every key stays in view. A key that has been changed is never folded away.
+Where the remote in use is one the [Remotes](../remotes.md) page has a finished button list for, the tab folds the keys that remote does not have into **Buttons on other remotes**, closed until opened. The remote is the one the TV is paired with, or one seen in use in the last 30 days, and the folding applies only if every such remote is listed there with a finished list: with a remote that is not listed, or whose list is not finished, every key stays in view. A key that has been changed is never folded away. A key whose button is printed differently on the remote in use goes by that name: with the MR25GA, the microphone key is listed as **AI**, the button that sends it.
 
 The list names buttons supported by the TV's model generation (e.g. a C5 lists its Disney+ button while a CX does not; 2020 remotes add a Movies button, and recent Magic Remotes add Alexa and Google Assistant buttons).
 

@@ -73,8 +73,10 @@ def render():
         if r['keys']:
             w('| Remote tab key | Evidence |')
             w('| :------------- | :------- |')
+            labels = r.get('labels') or {}
             for key, ev in r['keys'].items():
-                w('| %s (`%s`) | %s |' % (titles.get(key, key), key, ev))
+                printed = ', printed as %s' % labels[key] if key in labels else ''
+                w('| %s (`%s`)%s | %s |' % (titles.get(key, key), key, printed, ev))
             w('')
         if r['notes']:
             w(r['notes'])
@@ -93,6 +95,8 @@ def render():
     w('* `id`, `title`, `names` (what the TV reports: the paired remote\'s name on the Metrics tab, or `remote_type`'
       ' in `/var/log/messages`), `year` and `numberKeys` (`null` where not known).')
     w('* `keys`: the Remote tab key ids (the `KEYS` list in `server/lib/remotekeys.js`) with how sure the fact is.')
+    w('* `labels` (optional): the name printed on the remote for a key, where it differs from the Remote tab\'s, such as'
+      ' `{"voice": "AI"}`. The Remote tab then shows the key under that name while the remote is selected.')
     w('* `complete`: `true` only when the list is every button the remote has. Only a complete list lets the Remote tab'
       ' treat a key as not on that remote.')
     w('* `sources`: which TV and webOS version each fact came from.')

@@ -248,7 +248,11 @@ var KEYS = [
   { key: 'homehub', title: 'Home Hub', nativeOnly: true },
   // The MR25's AI button reads no value: see NATIVE_SERVICE_KEYS.
   { key: 'ai', title: 'AI', nativeOnly: true, turnsOffVoice: true },
-  { key: 'multikey', title: '? button', nativeOnly: true, noNothing: true },
+  // Also a filter key where LG's filters name it: appLaunch.js on an
+  // OLED48C56LB (webOS 10.3.0) opens the accessibility menu on a press and its
+  // overlay on a 2 s hold. Set there, it takes both, as the microphone does.
+  // Only webOS 11's native setting cannot be left doing nothing.
+  { key: 'multikey', symbol: 'WebOS.Key_webOS_Multikey', title: '? button', noNothing: true },
   { key: 'multikeyhold', title: '? button, held', nativeOnly: true, noNothing: true },
   { key: 'guide', symbol: 'WebOS.Key_webOS_TVGuide', title: 'Guide' },
   { key: 'input', symbol: 'WebOS.Key_webOS_InputSource', title: 'Input' },
@@ -1011,7 +1015,7 @@ function applyNativeNow(cb, mapOverride) {
     (nextList || []).forEach(function (entry) {
       Object.keys(entry || {}).forEach(function (name) {
         var def = keyByName(name);
-        if (!def || def.nativeOnly || NATIVE_ACTIONS[name]) return;
+        if (!def || def.nativeOnly || NATIVE_ACTIONS[name] || NATIVE_SETTINGS[name]) return;
         var v = reconcile(name, entry[name], function (lgEntry) { return mappingWanted(map, name, lgEntry); },
           lg.mapping, lg.mappingWritten);
         if (v !== undefined) { entry[name] = v; listChanged = true; }
@@ -1600,7 +1604,7 @@ function describeKeys(keys, inChain, cb, native) {
           opens: id ? (titles[id] || id) : '',
           elsewhere: !!(cc && k.regions && k.regions.indexOf(cc) === -1)
         };
-        if (k.noNothing) key.noNothing = true;
+        if (k.noNothing && native) key.noNothing = true;
         if (k.turnsOffVoice) key.turnsOffVoice = true;
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
@@ -1620,6 +1624,13 @@ function describeKeys(keys, inChain, cb, native) {
         // Keys on none of those, folded unless changed (the page decides); only where every one is known.
         var off = remotes.keysOffRemotes(selected, out.map(function (k) { return k.key; }));
         out.forEach(function (k) { if (off.indexOf(k.key) !== -1) k.offRemote = true; });
+        // A key under the name the remote prints on it (the MR25GA's AI button is the microphone key), unless
+        // another key already has that name (webOS 11 offers AI as a key of its own).
+        var taken = out.map(function (k) { return k.title; });
+        out.forEach(function (k) {
+          var label = remotes.labelFor(selected, k.key);
+          if (label && label !== k.title && taken.indexOf(label) === -1) k.title = label;
+        });
         cb({
           ok: true, supported: true, keys: out,
           choices: switchers.concat(media, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
@@ -1678,7 +1689,7 @@ function setOfferedKey(def, action, id, kind, cb) {
     return save(map, saved);
   }
   if (action === 'nothing') {
-    if (def.noNothing) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    if (def.noNothing && kind !== 'filter') return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
     map[def.key] = '';
     return save(map, saved);
   }

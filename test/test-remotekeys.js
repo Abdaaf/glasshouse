@@ -83,7 +83,7 @@ function loadFilter(broken, extra) {
   var ctx = {
     genericTimer: { set: function (ms, fn) { timers.push({ ms: ms, fn: fn }); return timers.length; } },
     WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
-             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006 },
+             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006, Key_webOS_Multikey: 1010 },
     Qt: { Key_Super_L: 2001 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
     lunaCall: {
@@ -633,6 +633,53 @@ step(function (next) {
           next();
         }));
       }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // The ? button is a filter key where LG's filters name it, and there it can do nothing.
+  var multi = function (r) { return r.keys.filter(function (k) { return k.key === 'multikey'; })[0]; };
+  rk.getRemoteKeys(guard(function (without) {
+    assert.ok(!multi(without), 'not offered where no filter names it');
+    fs.writeFileSync(path.join(filtersDir, 'multikey.js'), 'case WebOS.Key_webOS_Multikey:');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    rk.getRemoteKeys(guard(function (withKey) {
+      var k = multi(withKey);
+      assert.ok(k, 'offered where a filter names it');
+      assert.ok(!k.noNothing, 'the filter can leave it doing nothing');
+      rk.setRemoteKey('multikey', 'nothing', '', guard(function (s) {
+        assert.strictEqual(s.ok, true, s.error);
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1010, true, false), 'accepted', 'a press is taken from LG');
+        assert.strictEqual(f.handle(1010, false, false), 'accepted', 'and its release, so no hold starts');
+        rk.setRemoteKey('multikey', 'lg', '', guard(function () {
+          assert.strictEqual(loadFilter().handle(1010, true, false), 'next', 'As LG has it passes it on');
+          fs.unlinkSync(path.join(filtersDir, 'multikey.js'));
+          rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+          console.log('  \u2713 the ? button is offered where the filters name it, can do nothing there, and As LG has it passes it on');
+          next();
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // With the MR25GA selected, the microphone key goes by the name printed on it: AI.
+  fs.writeFileSync(path.join(filtersDir, 'voice.js'), 'case WebOS.Key_webOS_Voice:');
+  var mr25 = require('../server/lib/remotes').find('MR25GA');
+  rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir,
+    detectRemotes: function (cb) { cb({ auto: [mr25], detected: [] }); } });
+  rk.getRemoteKeys(guard(function (r) {
+    var mic = r.keys.filter(function (k) { return k.key === 'voice'; })[0];
+    assert.strictEqual(mic.title, 'AI', 'the name on the remote');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    rk.getRemoteKeys(guard(function (plain) {
+      assert.strictEqual(plain.keys.filter(function (k) { return k.key === 'voice'; })[0].title, 'Microphone', 'no remote known: its own name');
+      fs.unlinkSync(path.join(filtersDir, 'voice.js'));
+      console.log('  \u2713 the microphone key is named AI while the MR25GA is the remote in use');
+      next();
     }));
   }));
 });

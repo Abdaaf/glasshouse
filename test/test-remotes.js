@@ -46,6 +46,10 @@ all.forEach(function (r) {
     assert.ok(EVIDENCE.indexOf(r.keys[key]) !== -1, r.id + ': ' + key + ' has evidence ' + r.keys[key]);
   });
   if (r.complete) assert.ok(remotes.keysOf(r).length > 0, r.id + ' is complete with no keys');
+  Object.keys(r.labels || {}).forEach(function (key) {
+    assert.ok(remotes.hasKey(r, key), r.id + ': a label for ' + key + ', which it does not list');
+    assert.ok(typeof r.labels[key] === 'string' && r.labels[key].trim(), r.id + ': the label for ' + key + ' is a name');
+  });
 });
 console.log('  ✓ each key is one the Remote tab can set, with measured, documented or assumed evidence');
 
@@ -78,6 +82,20 @@ assert.deepEqual(remotes.keysOffRemotes([finished], offered), ['red', 'hulu'], '
 assert.deepEqual(remotes.keysOffRemotes([finished, finishedToo], offered), ['hulu'], 'a key either has stays');
 assert.deepEqual(remotes.keysOffRemotes([finished, unfinished], offered), [], 'one unfinished list folds nothing');
 assert.deepEqual(remotes.keysOffRemotes([finished, null], offered), [], 'nor does an unknown remote');
+
+// 6. A key under the name the remote prints on it, where the selected remotes agree
+var printsAi = { id: 'D', complete: true, keys: { voice: 'measured' }, labels: { voice: 'AI' } };
+var printsAiToo = { id: 'E', complete: true, keys: { voice: 'measured', netflix: 'measured' }, labels: { voice: 'AI' } };
+var plainMic = { id: 'F', complete: true, keys: { voice: 'measured' } };
+assert.strictEqual(remotes.labelFor([printsAi], 'voice'), 'AI');
+assert.strictEqual(remotes.labelFor([printsAi, printsAiToo], 'voice'), 'AI', 'two remotes printing the same name');
+assert.strictEqual(remotes.labelFor([printsAi, finished], 'voice'), 'AI', 'a remote without the key does not count');
+assert.strictEqual(remotes.labelFor([printsAi, plainMic], 'voice'), null, 'one remote with the plain name keeps it');
+assert.strictEqual(remotes.labelFor([printsAi, null], 'voice'), null, 'an unknown remote keeps it too');
+assert.strictEqual(remotes.labelFor([printsAiToo], 'netflix'), null, 'a key without a label');
+assert.strictEqual(remotes.labelFor([], 'voice'), null, 'all buttons: no remote');
+assert.strictEqual(remotes.labelFor([remotes.find('MR25GA')], 'voice'), 'AI', "the MR25GA's microphone key is its AI button");
+console.log('  ✓ a key takes the name printed on the selected remotes only where they all agree');
 assert.deepEqual(remotes.keysOffRemotes([], offered), [], 'nor does no remote at all');
 assert.deepEqual(remotes.keysOffRemotes(null, offered), []);
 console.log('  ✓ keys fold away only where every remote in use is known with a finished list');

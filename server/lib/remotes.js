@@ -82,6 +82,25 @@ function keysOffRemotes(selected, keyNames) {
   });
 }
 
+/*
+ * The name printed on the selected remotes for a Remote tab key, such as AI
+ * for the microphone key on the MR25GA, or null. Only where every selected
+ * remote that has the key prints the same name; one that has it under its own
+ * name, or a remote that is not known, keeps the key's own name.
+ */
+function labelFor(selected, key) {
+  var label = null;
+  for (var i = 0; i < (selected || []).length; i++) {
+    var remote = selected[i];
+    if (!remote) return null;
+    if (!hasKey(remote, key)) continue;
+    var own = remote.labels && typeof remote.labels[key] === 'string' ? remote.labels[key] : null;
+    if (!own || (label !== null && own !== label)) return null;
+    label = own;
+  }
+  return label;
+}
+
 // The file name of the remote's picture, under /assets/remotes/.
 function imageFile(remote) {
   return remote && remote.image ? remote.image : GENERIC_IMAGE;
@@ -94,6 +113,7 @@ module.exports = {
   keysOf: keysOf,
   hasKey: hasKey,
   keysOffRemotes: keysOffRemotes,
+  labelFor: labelFor,
   imageFile: imageFile,
   GENERIC_IMAGE: GENERIC_IMAGE
 };

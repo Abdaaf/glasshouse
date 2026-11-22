@@ -31,7 +31,7 @@ Reported by the TV as `LGE MR25GA` (measured). Has no number keys. The list of k
 | Channel up (`channelup`) | measured |
 | Channel down (`channeldown`) | measured |
 | Guide (`guide`) | measured |
-| Microphone (`voice`) | measured |
+| Microphone (`voice`), printed as AI | measured |
 | AI (`ai`) | documented |
 | Home Hub (`homehub`) | measured |
 | ? button (`multikey`) | measured |
@@ -45,7 +45,7 @@ Where this comes from:
 * OLED48C56LB, webOS 10.3.0, 21 November 2026: every key but Power pressed and read from the remote's input device (LGE M-RCU - Builtin [0]): Netflix, Prime Video, Disney+, LG Channels, Alexa, the key in Sling TV's place (sent as IR_KEY_RAKUTENTV), CH+ and CH-, Guide, the house in a circle (IR_KEY_INPUT_HUB), ? (IR_KEY_MULTIKEY, held as the same code), and the AI key (RF_KEY_VOICE, the microphone's code); also Home, Back, Settings, 123, the arrows, the wheel and volume, which the Remote tab does not offer
 * OLED48C56LB, webOS 10.3.0, 22 November 2026: the TV reports the remote as LGE MR25GA in its Bluetooth device list, its pairing file and lginput2's press log; the remote's label says MR25GA
 * The remote's own picture (server/assets/remotes/MR25GA.png)
-* The AI key as its own key (ai) is from webOS 11's native mapping; on webOS 10 it arrives as the microphone key (voice)
+* The AI key as its own key (ai) is from webOS 11's native mapping; on webOS 10 it arrives as the microphone key (voice), so the Remote tab names that key AI for this remote
 * No number keys, no red, green, yellow or blue keys, and no Info or Input key
 
 ## Adding a remote
@@ -54,6 +54,7 @@ The catalogue is [`server/lib/remotes.json`](https://github.com/rorygallagher202
 
 * `id`, `title`, `names` (what the TV reports: the paired remote's name on the Metrics tab, or `remote_type` in `/var/log/messages`), `year` and `numberKeys` (`null` where not known).
 * `keys`: the Remote tab key ids (the `KEYS` list in `server/lib/remotekeys.js`) with how sure the fact is.
+* `labels` (optional): the name printed on the remote for a key, where it differs from the Remote tab's, such as `{"voice": "AI"}`. The Remote tab then shows the key under that name while the remote is selected.
 * `complete`: `true` only when the list is every button the remote has. Only a complete list lets the Remote tab treat a key as not on that remote.
 * `sources`: which TV and webOS version each fact came from.
 * `image`: the file name of a small picture under `server/assets/remotes/`, about 160 px wide, a PNG with a transparent background, under 20 KB, original artwork or a picture you may share. A remote without one shows the generic outline. The file also goes in `FILES` in `server/deploy.sh`.
