@@ -1,16 +1,16 @@
 {
   "remotes": [
     {
-      "id": "MR26GA",
-      "title": "Magic Remote MR26GA",
+      "id": "MR25GA",
+      "title": "Magic Remote MR25GA",
       "names": [
-        "LGE MR26GA"
+        "LGE MR25GA"
       ],
-      "nameEvidence": "assumed",
+      "nameEvidence": "measured",
       "year": null,
       "numberKeys": false,
       "complete": false,
-      "image": "MR26GA.png",
+      "image": "MR25GA.png",
       "keys": {
         "netflix": "measured",
         "amazon": "measured",
@@ -27,11 +27,12 @@
       },
       "sources": [
         "OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of Netflix, Prime Video, CH+ and CH- read from the remote's input device, and CH+ and CH- received by the key filter",
-        "The remote's own picture (server/assets/remotes/MR26GA.png): the buttons printed with a name, as the documented keys",
-        "The round button at the top left and the ? button at the top right look like the MR25GA's Home Hub and ? buttons; that they are the same keys is assumed",
+        "OLED48C56LB, webOS 10.3.0, 22 November 2026: the TV reports the remote as LGE MR25GA in its Bluetooth device list, its pairing file and lginput2's press log; the remote's label says MR25GA",
+        "The remote's own picture (server/assets/remotes/MR25GA.png): the buttons printed with a name, as the documented keys",
+        "The round button at the top left and the ? button at the top right are taken to be the Home Hub and ? keys, from their look; not yet pressed",
         "This remote has no number keys"
       ],
-      "notes": "The name the TV reports for this remote has not been read yet; LGE MR26GA follows the others' pattern. The list is not marked complete until it has been checked against the remote."
+      "notes": "The list is not marked complete until it has been checked against the remote."
     }
   ]
 }

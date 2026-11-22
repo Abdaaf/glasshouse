@@ -206,7 +206,7 @@ step('a restore sets each through its control, only where this TV has it', funct
   });
   var wanted = copy(saved.settings);
   wanted.remoteKeys.amazon = 'missing.app';
-  wanted.remoteSelection = { mode: 'pick', ids: ['MR26GA'] };
+  wanted.remoteSelection = { mode: 'pick', ids: ['MR25GA'] };
   wanted.savedPages.push({ title: 'Weather', address: 'https://example.com/weather' });
   tv.use();
   backup.restore({ format: 'glasshouse-backup', version: 1, settings: wanted }, function (r) {
@@ -224,7 +224,7 @@ step('a restore sets each through its control, only where this TV has it', funct
       ['http://192.168.1.125:8123', 'https://example.com/weather'], 'a page already saved is not added again');
     assert.deepEqual(tv.keys, { netflix: 'youtube.leanback.v4', amazon: null }, 'a key this TV lacks is left out');
     assert.deepEqual(r.lg.failed, [{ id: 'remoteKeys', error: 'amazon' }], 'an app this TV lacks is named');
-    assert.deepEqual(tv.selection, { mode: 'pick', ids: ['MR26GA'] }, 'which remotes the Remote tab is for');
+    assert.deepEqual(tv.selection, { mode: 'pick', ids: ['MR25GA'] }, 'which remotes the Remote tab is for');
     assert.deepEqual(tv.quick, { 1: 'netflix', 2: '' });
     assert.strictEqual(tv.config.screensaverPowerOffMinutes, 120);
     assert.deepEqual(tv.custom, { mode: 'add', names: ['ads.example.com'], enabled: false }, 'the list, switched off as it was');

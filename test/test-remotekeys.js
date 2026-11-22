@@ -988,7 +988,7 @@ step(function (next) {
 
 // Which remotes the tab is for: automatic, all buttons, or ones chosen from the catalogue
 step(function (next) {
-  var detected = [{ name: 'LGE MR26GA', id: 'MR26GA', title: 'Magic Remote MR26GA', image: 'MR26GA.png', current: true }];
+  var detected = [{ name: 'LGE MR25GA', id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'MR25GA.png', current: true }];
   rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir,
     detectRemotes: function (cb) { cb({ auto: [{ id: 'A', title: 'Remote A', complete: true, keys: { netflix: 'measured' } }], detected: detected }); } });
   var file = path.join(stateDir, 'remotekeys.json');
@@ -996,7 +996,7 @@ step(function (next) {
     assert.strictEqual(r.remotes.mode, 'auto');
     assert.strictEqual(r.remotes.folding, true, 'automatic follows what is in use');
     assert.deepEqual(r.remotes.detected, detected, 'what was detected, for the page to say');
-    assert.deepEqual(r.remotes.catalogue.map(function (c) { return c.id; }), ['MR26GA'], 'what can be chosen');
+    assert.deepEqual(r.remotes.catalogue.map(function (c) { return c.id; }), ['MR25GA'], 'what can be chosen');
     rk.setRemoteSelection('all', [], guard(function (a) {
       assert.ok(a.ok, a.error);
       assert.ok(fs.existsSync(file), 'kept with the keys');
@@ -1004,12 +1004,12 @@ step(function (next) {
         assert.strictEqual(all.remotes.mode, 'all');
         assert.strictEqual(all.remotes.folding, false, 'all buttons folds nothing');
         assert.ok(!all.keys.some(function (k) { return k.offRemote; }));
-        rk.setRemoteSelection('pick', ['LGE MR26GA', 'MR26GA', 'MR99', 7], guard(function (p) {
+        rk.setRemoteSelection('pick', ['LGE MR25GA', 'MR25GA', 'MR99', 7], guard(function (p) {
           assert.ok(p.ok, p.error);
           rk.getRemoteKeys(guard(function (picked) {
             assert.strictEqual(picked.remotes.mode, 'pick');
-            assert.deepEqual(picked.remotes.ids, ['MR26GA'], 'a name finds its remote, repeats and strangers are dropped');
-            assert.deepEqual(picked.remotes.selected.map(function (x) { return x.id; }), ['MR26GA']);
+            assert.deepEqual(picked.remotes.ids, ['MR25GA'], 'a name finds its remote, repeats and strangers are dropped');
+            assert.deepEqual(picked.remotes.selected.map(function (x) { return x.id; }), ['MR25GA']);
             assert.strictEqual(picked.remotes.folding, false, 'the catalogue has no finished list for it yet');
             // Refused: nothing known chosen, or no such mode
             rk.setRemoteSelection('pick', ['MR99'], guard(function (bad) {

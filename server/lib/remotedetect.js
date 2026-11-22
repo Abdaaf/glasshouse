@@ -1,8 +1,9 @@
 /*
  * lib/remotedetect.js - which LG remotes the TV is used with
  *
- * Nothing on the TV says "the remote in your hand is an MR26GA", so this
- * gathers what does say something, cheaply and only when asked:
+ * A Magic Remote announces its model as its Bluetooth name when it pairs
+ * ("LGE MR25GA" on an OLED48C56LB, webOS 10.3.0, matching its label), and the
+ * TV keeps that name. This gathers it, cheaply and only when asked:
  *
  *  - the pairing file's name, which telemetry already reads for the battery
  *    (the remote the TV is paired with now);

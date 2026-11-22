@@ -6,7 +6,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 
 | Remote | Year | Reported by the TV as | Keys known | List complete |
 | :----- | :--- | :-------------------- | ---------: | :------------ |
-| [Magic Remote MR26GA](#mr26ga) | not known | `LGE MR26GA` | 12 | no |
+| [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 12 | no |
 
 How sure each fact is:
 
@@ -14,11 +14,11 @@ How sure each fact is:
 * **Documented:** stated in LG's manual or in this project's docs.
 * **Assumed:** expected, not confirmed.
 
-## Magic Remote MR26GA
+## Magic Remote MR25GA
 
-<a id="mr26ga"></a>
+<a id="mr25ga"></a>
 
-Reported by the TV as `LGE MR26GA` (assumed). Has no number keys. The list of keys below is what is known so far, not every button.
+Reported by the TV as `LGE MR25GA` (measured). Has no number keys. The list of keys below is what is known so far, not every button.
 
 | Remote tab key | Evidence |
 | :------------- | :------- |
@@ -35,13 +35,14 @@ Reported by the TV as `LGE MR26GA` (assumed). Has no number keys. The list of ke
 | Home Hub (`homehub`) | assumed |
 | ? button (`multikey`) | assumed |
 
-The name the TV reports for this remote has not been read yet; LGE MR26GA follows the others' pattern. The list is not marked complete until it has been checked against the remote.
+The list is not marked complete until it has been checked against the remote.
 
 Where this comes from:
 
 * OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of Netflix, Prime Video, CH+ and CH- read from the remote's input device, and CH+ and CH- received by the key filter
-* The remote's own picture (server/assets/remotes/MR26GA.png): the buttons printed with a name, as the documented keys
-* The round button at the top left and the ? button at the top right look like the MR25GA's Home Hub and ? buttons; that they are the same keys is assumed
+* OLED48C56LB, webOS 10.3.0, 22 November 2026: the TV reports the remote as LGE MR25GA in its Bluetooth device list, its pairing file and lginput2's press log; the remote's label says MR25GA
+* The remote's own picture (server/assets/remotes/MR25GA.png): the buttons printed with a name, as the documented keys
+* The round button at the top left and the ? button at the top right are taken to be the Home Hub and ? keys, from their look; not yet pressed
 * This remote has no number keys
 
 ## Adding a remote

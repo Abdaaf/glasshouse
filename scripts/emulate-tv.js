@@ -157,7 +157,7 @@ async function main() {
     '/etc/starfish-release': `Starfish release ${webosVer} (broadway)\n`,
     '/proc/lg/pm/temperature': '42\n',
     // The paired remote, as LG writes it when it pairs (the address here is made up).
-    '/mnt/lg/cmn_data/mrcu/mrcu1.info': 'Name = LGE MR26GA\nBDAddr = 00:00:5e:00:53:99\n',
+    '/mnt/lg/cmn_data/mrcu/mrcu1.info': 'Name = LGE MR25GA\nBDAddr = 00:00:5e:00:53:99\n',
     '/var/luna/preferences/environmentCondition': JSON.stringify({ boardTypeStr: profile.boardType, socChip: profile.boardType })
   });
 

@@ -37,7 +37,7 @@ function all() {
   return load().slice();
 }
 
-// "LGE MR26GA", "lge mr26ga" and "MR26GA" are one name.
+// "LGE MR25GA", "lge mr25ga" and "MR25GA" are one name.
 function normalizeName(name) {
   return String(name == null ? '' : name).replace(/^\s*LGE\s+/i, '').replace(/\s+/g, '').toUpperCase();
 }

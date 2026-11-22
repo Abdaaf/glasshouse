@@ -1621,6 +1621,19 @@ rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
 
+## Which Magic Remote model the TV knows (C5, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80) with an MR25GA, by its label, the remote's
+model is in every place that keeps its Bluetooth name: `bluetooth2/device/getStatus` lists it as
+`LGE MR25GA` (`typeOfDevice` `ble`), `mrcu1.info` has `Name = LGE MR25GA` with `fwVer`, the
+first line of `mrcu_info` beside it is `LGE MR25GA`, `pairing_history` there logs
+`MR25GA <firmware> PAIR_OK(KEY_OK)` among other Bluetooth devices' events, and lginput2's
+`NL_BUTTON_CLICK` lines in `/var/log/messages` carry `"remote_type":"LGE MR25GA"`. The input
+devices carry no model: `LGE M-RCU - Builtin [0]` to `[2]`, vendor and product 0.
+`mrcu/getDeviceInfo` with `MagicRemote_1` gives the slot, the address and, while the remote is
+awake, its firmware, but no name. The name is the remote's own; nothing checks it against the
+hardware.
+
 ## MR25GA battery (C5, webOS 11.2)
 
 OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
@@ -3759,7 +3772,7 @@ open. Successive watchdog checks logged that the view was behind
 
 ## Channel and mute keys reach the JavaScript key filter (OLED48C56LB, webOS 10.3.0)
 
-On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80, MR26GA remote), a probe in
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80, MR25GA remote), a probe in
 Glasshouse's own filter in `/usr/lib/qt5/qml/KeyFilters/` received CH+, CH-
 and mute, but not volume up or down. LG's `appLaunch.js` names
 `WebOS.Key_webOS_ChannelUp` and `WebOS.Key_webOS_ChannelDown`, which is how

@@ -52,14 +52,14 @@ steps([
   // The paired remote is current and found in the catalogue
   function (next) {
     start();
-    paired = { model: 'LGE MR26GA', mac: 'AA:BB:CC:00:11:22' };
+    paired = { model: 'LGE MR25GA', mac: 'AA:BB:CC:00:11:22' };
     detect.detect(function (r) {
       assert.strictEqual(r.remotes.length, 1);
       var m = r.remotes[0];
-      assert.strictEqual(m.name, 'LGE MR26GA');
-      assert.strictEqual(m.id, 'MR26GA');
-      assert.strictEqual(m.title, 'Magic Remote MR26GA');
-      assert.strictEqual(m.image, 'MR26GA.png', 'its own picture');
+      assert.strictEqual(m.name, 'LGE MR25GA');
+      assert.strictEqual(m.id, 'MR25GA');
+      assert.strictEqual(m.title, 'Magic Remote MR25GA');
+      assert.strictEqual(m.image, 'MR25GA.png', 'its own picture');
       assert.strictEqual(m.current, true);
       assert.deepEqual(m.sources, ['pairing']);
       console.log('  ✓ the paired remote is current and found in the catalogue');
@@ -69,7 +69,7 @@ steps([
   // Only names and times are kept, no address
   function (next) {
     var raw = fs.readFileSync(SEEN, 'utf8');
-    assert.ok(raw.indexOf('LGE MR26GA') !== -1);
+    assert.ok(raw.indexOf('LGE MR25GA') !== -1);
     assert.ok(raw.toUpperCase().indexOf('AA:BB:CC') === -1, 'no address in what is kept');
     console.log('  ✓ what is kept is the name and the time, not the address');
     next();
@@ -79,11 +79,11 @@ steps([
     fs.writeFileSync(LOG, NOISE +
       press('2026-11-18T11:00:00.000Z', 'LGE MR99', 'KEY_NETFLIX') +
       press('2026-11-18T11:30:00.000Z', 'LGE MR99', 'KEY_AMAZON') +
-      press('2026-11-18T11:45:00.000Z', 'LGE MR26GA', 'KEY_NETFLIX') +
+      press('2026-11-18T11:45:00.000Z', 'LGE MR25GA', 'KEY_NETFLIX') +
       'not a log line\n');
     start();
     detect.detect(function (r) {
-      assert.deepEqual(names(r), ['LGE MR26GA', 'LGE MR99'], 'the paired remote first, then by last press');
+      assert.deepEqual(names(r), ['LGE MR25GA', 'LGE MR99'], 'the paired remote first, then by last press');
       var mr26 = r.remotes[0], other = r.remotes[1];
       assert.deepEqual(mr26.sources, ['pairing', 'log']);
       assert.strictEqual(other.id, null, 'a remote the catalogue lacks has no id');
@@ -103,7 +103,7 @@ steps([
     clock += 3 * 24 * 3600 * 1000;
     start();
     detect.detect(function (r) {
-      assert.deepEqual(names(r), ['LGE MR26GA', 'LGE MR99'], 'the later sighting first');
+      assert.deepEqual(names(r), ['LGE MR25GA', 'LGE MR99'], 'the later sighting first');
       r.remotes.forEach(function (x) {
         assert.deepEqual(x.sources, ['seen']);
         assert.strictEqual(x.current, false);
@@ -183,14 +183,14 @@ steps([
   function (next) {
     var day = 24 * 3600 * 1000;
     var found = { remotes: [
-      { name: 'LGE MR26GA', current: true, lastSeen: clock },
+      { name: 'LGE MR25GA', current: true, lastSeen: clock },
       { name: 'LGE MR99', current: false, lastSeen: clock - 29 * day },
       { name: 'LGE MR98', current: false, lastSeen: clock - 31 * day },
       { name: 'LGE MR97', current: false, lastSeen: null }
     ] };
     var picked = detect.autoSelected(found, clock);
     assert.strictEqual(picked.length, 2, 'the paired one and the one seen 29 days ago');
-    assert.strictEqual(picked[0].id, 'MR26GA', 'a catalogued remote is its entry');
+    assert.strictEqual(picked[0].id, 'MR25GA', 'a catalogued remote is its entry');
     assert.strictEqual(picked[1], null, 'one the catalogue lacks is null');
     assert.deepEqual(detect.autoSelected({ remotes: [] }, clock), []);
     assert.deepEqual(detect.autoSelected(null, clock), []);

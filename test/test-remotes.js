@@ -58,14 +58,14 @@ all.forEach(function (r) {
 console.log('  ✓ every picture named exists, and a remote without one shows the generic outline');
 
 // 4. A name the TV reports finds its remote
-assert.strictEqual(remotes.find('LGE MR26GA').id, 'MR26GA');
-assert.strictEqual(remotes.find('lge  mr26ga').id, 'MR26GA', 'case and spacing do not matter');
-assert.strictEqual(remotes.find('MR26GA').id, 'MR26GA', 'nor does the LGE prefix');
+assert.strictEqual(remotes.find('LGE MR25GA').id, 'MR25GA');
+assert.strictEqual(remotes.find('lge  mr25ga').id, 'MR25GA', 'case and spacing do not matter');
+assert.strictEqual(remotes.find('MR25GA').id, 'MR25GA', 'nor does the LGE prefix');
 assert.strictEqual(remotes.find('LGE MR99'), null, 'a remote not catalogued is not guessed');
 assert.strictEqual(remotes.find(''), null);
 assert.strictEqual(remotes.find(null), null);
-assert.ok(remotes.hasKey(remotes.find('MR26GA'), 'channelup'));
-assert.ok(!remotes.hasKey(remotes.find('MR26GA'), 'hulu'), 'a key not listed is not claimed');
+assert.ok(remotes.hasKey(remotes.find('MR25GA'), 'channelup'));
+assert.ok(!remotes.hasKey(remotes.find('MR25GA'), 'hulu'), 'a key not listed is not claimed');
 assert.deepEqual(remotes.keysOf(null), []);
 console.log('  ✓ names find their remote whatever their case, spacing or prefix, and an unknown one is not guessed');
 
