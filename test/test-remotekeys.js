@@ -1012,7 +1012,7 @@ step(function (next) {
     assert.ok(off.length > 0 && off.indexOf('netflix') === -1 && off.indexOf('amazon') === -1, 'keys the remote lacks are marked, its own are not');
     assert.ok(off.indexOf('red') !== -1);
     assert.strictEqual(r.remotes.folding, true);
-    assert.deepEqual(r.remotes.selected, [{ id: 'A', title: 'Remote A', image: 'generic.png' }]);
+    assert.deepEqual(r.remotes.selected, [{ id: 'A', title: 'Remote A', image: 'generic.png', numberKeys: null }], 'not known: null');
     assert.strictEqual(r.remotes.unknown, 0);
     assert.strictEqual(r.remotes.why, '', 'nothing to explain while it folds');
     rk.setRemoteKey('red', 'open', 'netflix', guard(function (s) {
@@ -1076,6 +1076,7 @@ step(function (next) {
             assert.deepEqual(picked.remotes.ids, ['MR25GA'], 'a name finds its remote, repeats and strangers are dropped');
             assert.deepEqual(picked.remotes.selected.map(function (x) { return x.id; }), ['MR25GA']);
             assert.strictEqual(picked.remotes.folding, true, 'its list in the catalogue is complete');
+            assert.strictEqual(picked.remotes.selected[0].numberKeys, false, 'it has no number keys, for Quick Access to fold');
             picked.keys.forEach(function (k) {
               if (k.key === 'red') assert.ok(k.offRemote, 'a key it does not have folds');
               if (k.key === 'netflix') assert.ok(!k.offRemote, 'a key it has stays');

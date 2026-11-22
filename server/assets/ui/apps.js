@@ -391,6 +391,7 @@ const RK_COLOURS = { red: 'var(--red)', green: 'var(--green)', yellow: '#f2c230'
 // The volume controls' own glyphs; the rest share the play/pause one.
 const RK_MEDIA_GLYPHS = { 'media:ok': '◉', 'media:volumeUp': '🔊', 'media:volumeDown': '🔉', 'media:mute': '🔇' };
 let rkData = null;     // the last remoteKeys answer, for the picker
+let qaClosedForRemote = null; // whether Quick Access was last closed or opened for the remote in use
 let rkOpen = null;     // the key whose picker is open
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
@@ -471,6 +472,17 @@ function renderRemoteChoice(rk) {
     </div></div>${why ? `<div class="pv-note rm-why">${esc(why)}</div>` : ''}`;
 }
 
+// Quick Access is for holding a number key, so it starts closed where every remote in use is known to
+// have none. Only a change of remote opens or closes it again: one opened by hand stays open.
+function foldQuickAccess(remotes) {
+  const disc = q('disc-quickaccess');
+  const selected = (remotes && remotes.selected) || [];
+  const noNumbers = !!(remotes && remotes.folding && selected.length && selected.every(r => r.numberKeys === false));
+  if (!disc || noNumbers === qaClosedForRemote) return;
+  qaClosedForRemote = noNumbers;
+  disc.open = !noNumbers;
+}
+
 function renderRemoteKeys(d) {
   const disc = q('disc-remotekeys');
   const list = q('apps-rk-list');
@@ -486,6 +498,7 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
+  foldQuickAccess(rk.remotes);
   renderRemoteChoice(rk);
   renderInputs();
   // Left alone while a choice is being made in it.
