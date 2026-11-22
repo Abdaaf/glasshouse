@@ -6,7 +6,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 
 | Remote | Year | Reported by the TV as | Keys known | List complete |
 | :----- | :--- | :-------------------- | ---------: | :------------ |
-| [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 14 | no |
+| [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 14 | yes |
 
 How sure each fact is:
 
@@ -18,7 +18,7 @@ How sure each fact is:
 
 <a id="mr25ga"></a>
 
-Reported by the TV as `LGE MR25GA` (measured). Has no number keys. The list of keys below is what is known so far, not every button.
+Reported by the TV as `LGE MR25GA` (measured). Has no number keys. The list of keys below is every button the remote has.
 
 | Remote tab key | Evidence |
 | :------------- | :------- |
@@ -37,7 +37,7 @@ Reported by the TV as `LGE MR25GA` (measured). Has no number keys. The list of k
 | ? button (`multikey`) | measured |
 | ? button, held (`multikeyhold`) | measured |
 
-Every button on the remote was pressed except Power. The list is not marked complete until the owner confirms it is every button.
+Every button on the remote was pressed except Power, and the owner confirmed on 22 November 2026 that the list is every button it has.
 
 Where this comes from:
 

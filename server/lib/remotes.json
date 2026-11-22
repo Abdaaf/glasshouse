@@ -9,7 +9,7 @@
       "nameEvidence": "measured",
       "year": null,
       "numberKeys": false,
-      "complete": false,
+      "complete": true,
       "image": "MR25GA.png",
       "keys": {
         "netflix": "measured",
@@ -35,7 +35,7 @@
         "The AI key as its own key (ai) is from webOS 11's native mapping; on webOS 10 it arrives as the microphone key (voice)",
         "No number keys, no red, green, yellow or blue keys, and no Info or Input key"
       ],
-      "notes": "Every button on the remote was pressed except Power. The list is not marked complete until the owner confirms it is every button."
+      "notes": "Every button on the remote was pressed except Power, and the owner confirmed on 22 November 2026 that the list is every button it has."
     }
   ]
 }

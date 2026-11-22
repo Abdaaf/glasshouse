@@ -1010,7 +1010,11 @@ step(function (next) {
             assert.strictEqual(picked.remotes.mode, 'pick');
             assert.deepEqual(picked.remotes.ids, ['MR25GA'], 'a name finds its remote, repeats and strangers are dropped');
             assert.deepEqual(picked.remotes.selected.map(function (x) { return x.id; }), ['MR25GA']);
-            assert.strictEqual(picked.remotes.folding, false, 'the catalogue has no finished list for it yet');
+            assert.strictEqual(picked.remotes.folding, true, 'its list in the catalogue is complete');
+            picked.keys.forEach(function (k) {
+              if (k.key === 'red') assert.ok(k.offRemote, 'a key it does not have folds');
+              if (k.key === 'netflix') assert.ok(!k.offRemote, 'a key it has stays');
+            });
             // Refused: nothing known chosen, or no such mode
             rk.setRemoteSelection('pick', ['MR99'], guard(function (bad) {
               assert.strictEqual(bad.ok, false);
