@@ -6,7 +6,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 
 | Remote | Year | Reported by the TV as | Keys known | List complete |
 | :----- | :--- | :-------------------- | ---------: | :------------ |
-| [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 12 | no |
+| [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 14 | no |
 
 How sure each fact is:
 
@@ -24,26 +24,29 @@ Reported by the TV as `LGE MR25GA` (measured). Has no number keys. The list of k
 | :------------- | :------- |
 | Netflix (`netflix`) | measured |
 | Prime Video (`amazon`) | measured |
+| Disney+ (`disneyplus`) | measured |
+| LG Channels (`lgchannels`) | measured |
+| Rakuten TV (`rakutentv`) | measured |
+| Alexa (`alexa`) | measured |
 | Channel up (`channelup`) | measured |
 | Channel down (`channeldown`) | measured |
-| Disney+ (`disneyplus`) | documented |
-| Rakuten TV (`rakutentv`) | documented |
-| LG Channels (`lgchannels`) | documented |
-| Alexa (`alexa`) | documented |
+| Guide (`guide`) | measured |
+| Microphone (`voice`) | measured |
 | AI (`ai`) | documented |
-| Guide (`guide`) | documented |
-| Home Hub (`homehub`) | assumed |
-| ? button (`multikey`) | assumed |
+| Home Hub (`homehub`) | measured |
+| ? button (`multikey`) | measured |
+| ? button, held (`multikeyhold`) | measured |
 
-The list is not marked complete until it has been checked against the remote.
+Every button on the remote was pressed except Power. The list is not marked complete until the owner confirms it is every button.
 
 Where this comes from:
 
-* OLED48C56LB, webOS 10.3.0, 17 November 2026: presses of Netflix, Prime Video, CH+ and CH- read from the remote's input device, and CH+ and CH- received by the key filter
+* OLED48C56LB, webOS 10.3.0, 17 November 2026: CH+ and CH- received by the key filter
+* OLED48C56LB, webOS 10.3.0, 21 November 2026: every key but Power pressed and read from the remote's input device (LGE M-RCU - Builtin [0]): Netflix, Prime Video, Disney+, LG Channels, Alexa, the key in Sling TV's place (sent as IR_KEY_RAKUTENTV), CH+ and CH-, Guide, the house in a circle (IR_KEY_INPUT_HUB), ? (IR_KEY_MULTIKEY, held as the same code), and the AI key (RF_KEY_VOICE, the microphone's code); also Home, Back, Settings, 123, the arrows, the wheel and volume, which the Remote tab does not offer
 * OLED48C56LB, webOS 10.3.0, 22 November 2026: the TV reports the remote as LGE MR25GA in its Bluetooth device list, its pairing file and lginput2's press log; the remote's label says MR25GA
-* The remote's own picture (server/assets/remotes/MR25GA.png): the buttons printed with a name, as the documented keys
-* The round button at the top left and the ? button at the top right are taken to be the Home Hub and ? keys, from their look; not yet pressed
-* This remote has no number keys
+* The remote's own picture (server/assets/remotes/MR25GA.png)
+* The AI key as its own key (ai) is from webOS 11's native mapping; on webOS 10 it arrives as the microphone key (voice)
+* No number keys, no red, green, yellow or blue keys, and no Info or Input key
 
 ## Adding a remote
 
