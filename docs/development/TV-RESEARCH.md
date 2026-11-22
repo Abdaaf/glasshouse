@@ -1640,7 +1640,11 @@ On an OLED48C56LB (webOS 10.3.0) with an MR25GA, LG's `appLaunch.js` in
 `/usr/lib/qt5/qml/KeyFilters/` names the ? button as `WebOS.Key_webOS_Multikey`: a press calls
 `launchAccessibility`, and a 2 s hold, timed by `longPressTimer`, `launchAccessibilityOverlay`,
 unless `settingsService.disableAccessibilityLaunch`. The key reaches Linux as code 1124,
-`IR_KEY_MULTIKEY`. No filter names the Home Hub button (`IR_KEY_INPUT_HUB`, code 1023).
+`IR_KEY_MULTIKEY`. The Home Hub button (`IR_KEY_INPUT_HUB`, Linux code 1023) reaches the filters
+as `Qt.Key_Video` (`0x010000f3` in `/usr/share/X11/xkb/keycodes/lg`): `appLaunch.js` launches
+`inputHubAction.appId` with the last input (`applicationManager.checkLaunch`), passing the key on
+where that app is already full screen, or, where `inputHubAction.action` is `showInputPicker`,
+shows `com.webos.app.quickinputpicker`.
 
 The 123 button reaches the filters as `WebOS.Key_webOS_ScreenRemote` (Qt `0x01200032`; Linux
 code 994, `IR_KEY_SCREEN_REMOTE`). `appLaunch.js` sends it on to YouTube's window, leaves it to a

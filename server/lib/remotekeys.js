@@ -245,7 +245,10 @@ var KEYS = [
   // NATIVE_SETTINGS); the JavaScript filter leaves them out, so its file is
   // unchanged. Home Hub is the MR25's house-in-a-circle button (IR 1031); the
   // ? button (IR 1132) is LG's custom button, with an action of its own when held.
-  { key: 'homehub', title: 'Home Hub', nativeOnly: true },
+  // Also a filter key where LG's filters name it: Qt.Key_Video in appLaunch.js
+  // on an OLED48C56LB (webOS 10.3.0), which opens the app LG sets for it
+  // (inputHubAction) or the input picker.
+  { key: 'homehub', symbol: 'Qt.Key_Video', title: 'Home Hub' },
   // The MR25's AI button reads no value: see NATIVE_SERVICE_KEYS.
   { key: 'ai', title: 'AI', nativeOnly: true, turnsOffVoice: true },
   // Also a filter key where LG's filters name it: appLaunch.js on an

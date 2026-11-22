@@ -84,7 +84,7 @@ function loadFilter(broken, extra) {
     genericTimer: { set: function (ms, fn) { timers.push({ ms: ms, fn: fn }); return timers.length; } },
     WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
              Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006, Key_webOS_Multikey: 1010, Key_webOS_ScreenRemote: 1011 },
-    Qt: { Key_Super_L: 2001 },
+    Qt: { Key_Super_L: 2001, Key_Video: 2002 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
     lunaCall: {
       appId: 'com.webos.surfacemanager',
@@ -673,7 +673,23 @@ step(function (next) {
                 fs.unlinkSync(path.join(filtersDir, 'screenremote.js'));
                 rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
                 console.log('  \u2713 the 123 button too');
-                next();
+                // And Home Hub, which LG's filters name as Qt.Key_Video.
+                fs.writeFileSync(path.join(filtersDir, 'homehub.js'), 'case Qt.Key_Video:');
+                rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+                rk.getRemoteKeys(guard(function (withHub) {
+                  assert.ok(withHub.keys.some(function (k) { return k.key === 'homehub' && k.title === 'Home Hub'; }), 'Home Hub offered where a filter names it');
+                  rk.setRemoteKey('homehub', 'open', 'netflix', guard(function (sHub) {
+                    assert.strictEqual(sHub.ok, true, sHub.error);
+                    assert.strictEqual(loadFilter().handle(2002, true, false), 'accepted', 'a press is taken from LG');
+                    rk.setRemoteKey('homehub', 'lg', '', guard(function () {
+                      assert.strictEqual(loadFilter().handle(2002, true, false), 'next');
+                      fs.unlinkSync(path.join(filtersDir, 'homehub.js'));
+                      rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+                      console.log('  \u2713 and Home Hub');
+                      next();
+                    }));
+                  }));
+                }));
               }));
             }));
           }));
