@@ -83,7 +83,7 @@ function loadFilter(broken, extra) {
   var ctx = {
     genericTimer: { set: function (ms, fn) { timers.push({ ms: ms, fn: fn }); return timers.length; } },
     WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
-             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006, Key_webOS_Multikey: 1010 },
+             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006, Key_webOS_Multikey: 1010, Key_webOS_ScreenRemote: 1011 },
     Qt: { Key_Super_L: 2001 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
     lunaCall: {
@@ -658,7 +658,25 @@ step(function (next) {
           fs.unlinkSync(path.join(filtersDir, 'multikey.js'));
           rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
           console.log('  \u2713 the ? button is offered where the filters name it, can do nothing there, and As LG has it passes it on');
-          next();
+          // The 123 button the same way.
+          fs.writeFileSync(path.join(filtersDir, 'screenremote.js'), 'case WebOS.Key_webOS_ScreenRemote:');
+          rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+          rk.getRemoteKeys(guard(function (with123) {
+            assert.ok(with123.keys.some(function (k) { return k.key === 'screenremote' && k.title === '123 button'; }), '123 offered where a filter names it');
+            rk.setRemoteKey('screenremote', 'open', 'netflix', guard(function (s123) {
+              assert.strictEqual(s123.ok, true, s123.error);
+              var f123 = loadFilter();
+              assert.strictEqual(f123.handle(1011, true, false), 'accepted', 'a press is taken, so LG shows no on-screen remote');
+              assert.strictEqual(f123.handle(1011, false, false), 'accepted');
+              rk.setRemoteKey('screenremote', 'lg', '', guard(function () {
+                assert.strictEqual(loadFilter().handle(1011, true, false), 'next');
+                fs.unlinkSync(path.join(filtersDir, 'screenremote.js'));
+                rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+                console.log('  \u2713 the 123 button too');
+                next();
+              }));
+            }));
+          }));
         }));
       }));
     }));

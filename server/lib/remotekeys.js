@@ -253,6 +253,12 @@ var KEYS = [
   // overlay on a 2 s hold. Set there, it takes both, as the microphone does.
   // Only webOS 11's native setting cannot be left doing nothing.
   { key: 'multikey', symbol: 'WebOS.Key_webOS_Multikey', title: '? button', noNothing: true },
+  // The 123 button: appLaunch.js on an OLED48C56LB (webOS 10.3.0) shows LG's
+  // on-screen remote on a press (systemUIManager, com.webos.app.screenremote:
+  // user manual, Sport, Quick Help and the colour keys), hands it to YouTube and
+  // apps that ask for it, and a hold toggles audio description. Set, the filter
+  // takes all of that. No native setting for it on webOS 11.
+  { key: 'screenremote', symbol: 'WebOS.Key_webOS_ScreenRemote', title: '123 button', filterOnly: true },
   { key: 'multikeyhold', title: '? button, held', nativeOnly: true, noNothing: true },
   { key: 'guide', symbol: 'WebOS.Key_webOS_TVGuide', title: 'Guide' },
   { key: 'input', symbol: 'WebOS.Key_webOS_InputSource', title: 'Input' },

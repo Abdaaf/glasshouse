@@ -1642,6 +1642,15 @@ On an OLED48C56LB (webOS 10.3.0) with an MR25GA, LG's `appLaunch.js` in
 unless `settingsService.disableAccessibilityLaunch`. The key reaches Linux as code 1124,
 `IR_KEY_MULTIKEY`. No filter names the Home Hub button (`IR_KEY_INPUT_HUB`, code 1023).
 
+The 123 button reaches the filters as `WebOS.Key_webOS_ScreenRemote` (Qt `0x01200032`; Linux
+code 994, `IR_KEY_SCREEN_REMOTE`). `appLaunch.js` sends it on to YouTube's window, leaves it to a
+foreground app whose info has `handleScreenRemoteKey` (the web browser shows its own menu) and to
+the screen saver, opens `com.webos.app.multiviewsettings` in multi-view, and otherwise asks
+`systemUIManager/launch` for `com.webos.app.screenremote`: LG's on-screen remote, here a list of
+the user manual, Sport, Quick Help and the four colour keys. That id is not an app
+(`getAppInfo` refuses it); `systemUi.js` closes it as `screenRemoteView`. Held, the button
+toggles audio description, `AD/SAP` printed under it.
+
 ## MR25GA battery (C5, webOS 11.2)
 
 OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
