@@ -50,6 +50,8 @@ When nothing is folded, the section says why: no remote was detected, a remote t
 
 Where the remote in use is one the [Remotes](../remotes.md) page has a finished button list for, the tab folds the keys that remote does not have into **Buttons on other remotes**, closed until opened. The remote is the one the TV is paired with, or one seen in use in the last 30 days, and the folding applies only if every such remote is listed there with a finished list: with a remote that is not listed, or whose list is not finished, every key stays in view. A key that has been changed is never folded away. Where none of those remotes has number keys, the **Quick Access** section, which is set by holding a number key, also starts closed; it can still be opened. A key whose button is printed differently on the remote in use goes by that name: with the MR25GA, the microphone key is listed as **AI**, the button that sends it.
 
+How each key is known at each layer of the TV, from LG's key table to the key filters and Home Assistant, is on the [Remote keys](../remote-keys.md) page.
+
 The list names buttons supported by the TV's model generation (e.g. a C5 lists its Disney+ button while a CX does not; 2020 remotes add a Movies button, and recent Magic Remotes add Alexa and Google Assistant buttons).
 
 LG uses identical key definitions across countries. Once the TV reports its country, keys only sold on remotes elsewhere (such as Hulu and Sling TV in the US, BBC iPlayer and Freeview Play in the UK, Globoplay in Brazil, or Shahid in the United Arab Emirates) are grouped under **Buttons on remotes sold elsewhere**. Assigning a key not present on the physical remote does nothing and causes no harm.

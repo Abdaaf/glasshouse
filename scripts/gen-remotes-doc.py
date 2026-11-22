@@ -40,7 +40,8 @@ def render():
     w('<!-- Made by scripts/gen-remotes-doc.py from server/lib/remotes.json: edit that file, then run the script. -->')
     w('')
     w('The LG remotes Glasshouse knows, with the Remote tab keys each is known to have. A remote not listed here,'
-      ' or a list with a button missing, is fine to add: see [Adding a remote](#adding-a-remote).')
+      ' or a list with a button missing, is fine to add: see [Adding a remote](#adding-a-remote).'
+      ' How each key is known at each layer of the TV is on [Remote keys](remote-keys.md).')
     w('')
     w('| Remote | Year | Reported by the TV as | Keys known | List complete |')
     w('| :----- | :--- | :-------------------- | ---------: | :------------ |')

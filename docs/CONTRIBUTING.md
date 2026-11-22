@@ -162,7 +162,7 @@ The deploy script (`server/deploy.sh`) maintains an explicit list of files copie
 
 ### Documenting a remote
 
-The LG remotes Glasshouse knows are in `server/lib/remotes.json`, and [Remotes](remotes.md) is made from it with `scripts/gen-remotes-doc.py`. A remote that is missing, or a button a list lacks, is added there: see [Adding a remote](remotes.md#adding-a-remote).
+The LG remotes Glasshouse knows are in `server/lib/remotes.json`, and [Remotes](remotes.md) is made from it with `scripts/gen-remotes-doc.py`. A remote that is missing, or a button a list lacks, is added there: see [Adding a remote](remotes.md#adding-a-remote). How each Remote tab key is known at each layer of the TV, from LG's key table to Home Assistant, is in [Remote keys](remote-keys.md), made from the `KEYS` list in `server/lib/remotekeys.js` with `scripts/gen-remote-keys-doc.js`.
 
 ### Localized strings
 
