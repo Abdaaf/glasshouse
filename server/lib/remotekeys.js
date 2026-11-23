@@ -360,7 +360,7 @@ function init(opts) {
   watchLg(false);
   reapplied = [];
   SubscriptionCtor = opts.subscription || null;
-  levelBar.init({ luna: lunaFn, subscription: SubscriptionCtor, readStyle: brightnessBarStyle, idleMs: opts.backlightIdleMs });
+  levelBar.init({ luna: lunaFn, subscription: SubscriptionCtor, readStyle: brightnessBarStyle, idleMs: opts.backlightIdleMs, volumeQmlDir: opts.volumeQmlDir, volumeQmlHashes: opts.volumeQmlHashes });
   followPresses({});
   if (toastsTimer) { clearTimeout(toastsTimer); toastsTimer = null; }
   servicesModule = opts.services || null;
@@ -493,6 +493,34 @@ function brightnessBarStyle() {
   return readStoredBarStyle() || 'lg';
 }
 
+/*
+ * Whose volume bar the TV shows: 'lg', LG's own (the default), or 'pill', the
+ * vertical pill Glasshouse draws in the compositor in its place (lib/levelbar).
+ * Kept in the file only as 'pill'.
+ */
+function readStoredVolumeStyle() {
+  try {
+    var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
+    return j && j.volumeBarStyle === 'pill' ? 'pill' : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function volumeBarStyle() {
+  return readStoredVolumeStyle() || 'lg';
+}
+
+// Whether this TV can have the pill: the JavaScript filter runs, and LG's volume files are the ones it was made for.
+function volumeBarAvailable() {
+  return barAvailable() && levelBar.volumeFilesKnown();
+}
+
+// The pill is chosen and can be had: the filter then draws it, with or without a key set.
+function volumeCustomOn() {
+  return readStoredVolumeStyle() === 'pill' && volumeBarAvailable();
+}
+
 // A Brightness key shows a level bar unless the style is 'none'.
 function levelBarShown() {
   return brightnessBarStyle() !== 'none';
@@ -505,11 +533,12 @@ function needsBarApp(id) {
 }
 
 // step and style are kept as they were in the file unless one is given ('' for the default).
-function writeMap(map, home, starting, step, style) {
+function writeMap(map, home, starting, step, style, volume) {
   levelBar.forgetStyle();
   if (step === undefined) step = readStoredBrightnessStep();
   if (style === undefined) style = readStoredBarStyle();
-  if (!Object.keys(map).length && !home && !starting && !step && !style) {
+  if (volume === undefined) volume = readStoredVolumeStyle();
+  if (!Object.keys(map).length && !home && !starting && !step && !style && !volume) {
     try { fs.unlinkSync(mapFile()); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     return;
   }
@@ -518,6 +547,7 @@ function writeMap(map, home, starting, step, style) {
   if (starting) j.starting = starting;
   if (step) j.brightnessStep = step;
   if (style) j.brightnessBarStyle = style;
+  if (volume) j.volumeBarStyle = volume;
   fs.writeFileSync(mapFile(), JSON.stringify(j, null, 2) + '\n', 'utf8');
 }
 
@@ -833,6 +863,7 @@ function writeKeys(map, cb, home, starting) {
   if (levelBarShown() && barAvailable() && Object.keys(map).some(function (k) { return isBrightnessAction(map[k]); })) value.osd = true;
   var barStyle = readStoredBarStyle();
   if (barStyle === 'horizontal' || barStyle === 'vertical') value.osdStyle = barStyle;
+  if (volumeCustomOn()) value.volume = 'pill';
   configs[MAP_KEY] = value;
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
     cb(!!(r && r.returnValue));
@@ -907,7 +938,7 @@ function apply(cb) {
     var inChain = list.some(ours);
     // Nothing set and nothing installed: configd is not written, as it can
     // never forget the value again, and a TV that never sets a key keeps none.
-    if (!Object.keys(map).length && !home && !starting && !inChain) return cb(true);
+    if (!Object.keys(map).length && !home && !starting && !volumeCustomOn() && !inChain) return cb(true);
     var src = filterSource();
     var current = null;
     try { current = fs.readFileSync(filterFile(), 'utf8'); } catch (e) {}
@@ -1892,6 +1923,8 @@ function describeKeys(keys, inChain, cb, native) {
       });
       cb({
         ok: true, supported: true, keys: out, brightnessStep: brightnessStep(), brightnessBarStyle: brightnessBarStyle(),
+        // The volume bar: LG's or Glasshouse's pill, and whether this TV can have the pill.
+        volumeBarStyle: volumeBarStyle(), volumeBar: !native && volumeBarAvailable(),
         // Where the JavaScript filter runs and the bar's app can be put on the TV, which the level bar needs.
         brightnessBar: !native && barAvailable(),
         choices: switchers.concat(media, guide, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
@@ -2063,6 +2096,29 @@ function setBrightnessBarStyle(value, cb) {
     });
   }
   save();
+}
+
+/*
+ * Whose volume bar the TV shows: 'lg' or 'pill'. The pill is refused where the
+ * TV cannot have it (webOS 3 and 11, or LG's volume files not the known ones).
+ * cb({ ok, error }).
+ */
+function setVolumeBarStyle(value, cb) {
+  if (value !== 'lg' && value !== 'pill') {
+    return cb({ ok: false, error: msg('srv.remoteKeys.badVolumeStyle', 'The volume bar style must be lg or pill') });
+  }
+  if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
+  if (value === 'pill' && !volumeBarAvailable()) {
+    return cb({ ok: false, error: msg('srv.remoteKeys.noVolumePill', 'This TV\'s volume bar is not one Glasshouse can replace') });
+  }
+  try {
+    writeMap(readMap(), readHome(), readStarting(), undefined, undefined, value === 'pill' ? 'pill' : '');
+  } catch (e) {
+    return cb({ ok: false, error: msg('srv.remoteKeys.saveFailed', 'Could not save the change: {error}', { error: e.message }) });
+  }
+  applyAny(function (ok) {
+    cb(ok ? { ok: true } : { ok: false, error: msg('srv.remoteKeys.chainFailed', 'The TV did not take the change') });
+  });
 }
 
 /*
@@ -2254,6 +2310,8 @@ module.exports = {
   setHome: setHome,
   setBrightnessStep: setBrightnessStep,
   setBrightnessBarStyle: setBrightnessBarStyle,
+  setVolumeBarStyle: setVolumeBarStyle,
+  volumeBarStyle: volumeBarStyle,
   getBrightness: levelBar.getBrightness,
   setStarting: setStarting,
   homeApp: readHome,

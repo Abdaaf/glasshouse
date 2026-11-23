@@ -227,6 +227,45 @@ step('the compositor\'s bar is only on the compositor while a Brightness key is 
   done();
 });
 
+step('the custom volume bar is only used where LG\'s volume files are the known ones', function (done) {
+  var fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto');
+  var dir = fs.mkdtempSync ? fs.mkdtempSync(path.join(os.tmpdir(), 'gh-vol-')) : path.join(os.tmpdir(), 'gh-vol-' + process.pid);
+  try { fs.mkdirSync(dir); } catch (e) {}
+  fs.mkdirSync(path.join(dir, 'volume'));
+  var files = { 'StarfishVolumeView.qml': 'view', 'volume/StarfishVolume.qml': 'volume', 'volume/StarfishVolumeMute.qml': 'mute' };
+  var hashes = {};
+  Object.keys(files).forEach(function (n) {
+    fs.writeFileSync(path.join(dir, n), files[n]);
+    hashes[n] = crypto.createHash('sha256').update(files[n]).digest('hex');
+  });
+  levelBar.init({ volumeQmlDir: dir, volumeQmlHashes: hashes });
+  assert.strictEqual(levelBar.volumeFilesKnown(), true, 'the three files with their hashes');
+  fs.writeFileSync(path.join(dir, 'volume/StarfishVolume.qml'), 'changed by a firmware update');
+  assert.strictEqual(levelBar.volumeFilesKnown(), true, 'read once, not on every ask');
+  levelBar.init({ volumeQmlDir: dir, volumeQmlHashes: hashes });
+  assert.strictEqual(levelBar.volumeFilesKnown(), false, 'one file different: not known');
+  fs.writeFileSync(path.join(dir, 'volume/StarfishVolume.qml'), files['volume/StarfishVolume.qml']);
+  fs.unlinkSync(path.join(dir, 'volume/StarfishVolumeMute.qml'));
+  levelBar.init({ volumeQmlDir: dir, volumeQmlHashes: hashes });
+  assert.strictEqual(levelBar.volumeFilesKnown(), false, 'one file missing: not known');
+  levelBar.init({ volumeQmlDir: path.join(dir, 'nowhere') });
+  assert.strictEqual(levelBar.volumeFilesKnown(), false, 'no LG files at all (this computer): not known');
+  assert.deepEqual(Object.keys(levelBar.VOLUME_QML_HASHES), ['StarfishVolumeView.qml', 'volume/StarfishVolume.qml', 'volume/StarfishVolumeMute.qml']);
+  Object.keys(levelBar.VOLUME_QML_HASHES).forEach(function (n) { assert.ok(/^[0-9a-f]{64}$/.test(levelBar.VOLUME_QML_HASHES[n]), n + ' has a sha256'); });
+  done();
+});
+
+step('the QML hands LG\'s volume bar back for what it does not draw, and gives it back when it is taken off', function (done) {
+  var qml = levelBar.COMPOSITOR_BAR_QML;
+  assert.ok(/import WebOSCompositorBase 1\.0/.test(qml), 'LS comes from the compositor\'s base module');
+  assert.ok(/if \(a\.muted \|\| a\.disabled \|\| a\.mode === "internal" \|\| a\.ossActivate\) return false;/.test(qml), 'mute, disabled, internal mode and the other outputs are left to LG');
+  assert.ok(/if \(volumeBar && volumeBar\.partialViewState\) return false;/.test(qml), 'so is partial view');
+  assert.ok(/lgView\.available === false/.test(qml), 'nothing is drawn where LG\'s view is not available (volume OSD off)');
+  assert.ok(/Component\.onDestruction: \{ if \(lgView && customVolume\) lgView\.opacity = 1; \}/.test(qml), 'LG\'s bar is given back when the item is destroyed');
+  assert.ok(/if \(!rightEdge \|\| customVolume\) return;/.test(qml), 'nothing gives way to a bar that is hidden');
+  done();
+});
+
 step('the QML draws the four looks and waits for every one of LG\'s pictures', function (done) {
   var qml = levelBar.COMPOSITOR_BAR_QML;
   ['trackImage', 'fillImage', 'capTop', 'capBottom', 'arrowUp', 'arrowDown'].forEach(function (id) {
@@ -236,6 +275,35 @@ step('the QML draws the four looks and waits for every one of LG\'s pictures', f
   assert.ok(/style === "horizontal" \? "h" : style === "vertical" \? "v" : \(nativeLook \? "lg" : "lgdrawn"\)/.test(qml), 'the look is chosen by the style and by what loaded');
   assert.ok(/function show\(value, style\)/.test(qml));
   assert.ok(!/\n\s*Image \{[^}]*visible: bar\.mode === "lgdrawn"/.test(qml), 'the drawn look uses no picture');
+  done();
+});
+
+step('the filter makes the item for the custom volume bar with no Brightness key set, and switches it with the configd value', function (done) {
+  var made = 0, destroyed = 0, items = [];
+  var volumeBar = { restartClosingTimer: function () {}, closeView: function () {} };
+  var view = { children: [volumeBar] };
+  view.parent = { children: [view] };
+  var sandbox = vm.createContext({
+    console: console,
+    applicationManager: { launch: function () { assert.fail('no app'); } },
+    views: { starfishVolume: view },
+    Qt: { createQmlObject: function () { made++; var item = { destroy: function () { destroyed++; }, show: function () { return true; } }; items.push(item); return item; } }
+  });
+  var config = function (value) { return 'var value = ' + JSON.stringify(value) + ';\n' + levelBar.filterConfig(); };
+  vm.runInContext(levelBar.filterShow('com.example.bar'), sandbox);
+  vm.runInContext(config({}), sandbox);
+  assert.strictEqual(made, 0, 'nothing with neither');
+  vm.runInContext(config({ volume: 'pill' }), sandbox);
+  assert.strictEqual(made, 1, 'made for the volume bar alone');
+  assert.strictEqual(items[0].volumeOn, true, 'and switched on');
+  assert.strictEqual(items[0].lgView, view, 'given LG\'s volume view to hide');
+  vm.runInContext(config({ volume: 'pill', osd: true }), sandbox);
+  assert.strictEqual(made, 1, 'one item serves both');
+  vm.runInContext(config({ osd: true }), sandbox);
+  assert.strictEqual(items[0].volumeOn, false, 'the volume bar switched off, LG\'s given back by the item');
+  assert.strictEqual(destroyed, 0, 'and the item kept for the brightness bar');
+  vm.runInContext(config({}), sandbox);
+  assert.strictEqual(destroyed, 1, 'taken off when neither needs it');
   done();
 });
 

@@ -1250,6 +1250,95 @@ step(function (next) {
   }));
 });
 
+// The volume bar: LG's by default; Glasshouse's pill where the JavaScript filter runs and LG's volume files are the known ones.
+step(function (next) {
+  var crypto = require('crypto');
+  var qmlDir = path.join(dir, 'lgqml');
+  fs.mkdirSync(qmlDir);
+  fs.mkdirSync(path.join(qmlDir, 'volume'));
+  var files = { 'StarfishVolumeView.qml': 'view', 'volume/StarfishVolume.qml': 'volume', 'volume/StarfishVolumeMute.qml': 'mute' };
+  var hashes = {};
+  Object.keys(files).forEach(function (n) {
+    fs.writeFileSync(path.join(qmlDir, n), files[n]);
+    hashes[n] = crypto.createHash('sha256').update(files[n]).digest('hex');
+  });
+  function initWith(allowed, opts) {
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir,
+      inputBarAllowed: function () { return allowed; },
+      inputBarApp: function (action, cb) { process.nextTick(function () { cb({ ok: true }); }); },
+      volumeQmlDir: opts.dir, volumeQmlHashes: opts.hashes });
+  }
+  freshTv();
+  initWith(true, { dir: qmlDir, hashes: hashes });
+  rk.getRemoteKeys(guard(function (r0) {
+    assert.strictEqual(r0.volumeBarStyle, 'lg', 'LG\'s bar by default');
+    assert.strictEqual(r0.volumeBar, true, 'the pill is offered where the filter runs and the files are known');
+    assert.strictEqual(tv.keysWrites, 0, 'nothing written to configd for the default');
+    rk.setVolumeBarStyle('bogus', guard(function (bad) {
+      assert.strictEqual(bad.ok, false, 'an unknown style is refused');
+      rk.setVolumeBarStyle('pill', guard(function (on) {
+        assert.ok(on.ok, on.error);
+        assert.strictEqual(tv.keys.volume, 'pill', 'the filter is told');
+        assert.deepEqual(tv.keys.keys, {}, 'with no key set');
+        assert.ok(tv.chain.some(function (e) { return e.handler === rk.HANDLER; }), 'the filter is in the chain with no key set');
+        assert.strictEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).volumeBarStyle, 'pill', 'and the choice is kept');
+        assert.ok(fs.readFileSync(FILTER, 'utf8').indexOf('glasshouseVolumeCustom') !== -1, 'the filter knows how to act on it');
+        // Another setting written afterwards keeps it.
+        rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (k) {
+          assert.ok(k.ok, k.error);
+          assert.strictEqual(tv.keys.volume, 'pill', 'a key set does not drop it');
+          rk.setRemoteKey('red', 'lg', '', guard(function (k2) {
+            assert.ok(k2.ok, k2.error);
+            assert.strictEqual(tv.keys.volume, 'pill', 'nor does clearing the key');
+            rk.setVolumeBarStyle('lg', guard(function (off) {
+              assert.ok(off.ok, off.error);
+              assert.strictEqual(tv.keys.volume, undefined, 'back to LG\'s: the filter is told');
+              assert.strictEqual(fs.existsSync(MAP), false, 'and nothing is kept');
+              // LG's volume files not the known ones: refused, nothing written.
+              var writes = tv.keysWrites;
+              var other = {}; Object.keys(hashes).forEach(function (n) { other[n] = '0'.repeat(64); });
+              initWith(true, { dir: qmlDir, hashes: other });
+              rk.setVolumeBarStyle('pill', guard(function (refused) {
+                assert.strictEqual(refused.ok, false, 'refused where LG\'s files are not the known ones');
+                assert.strictEqual(tv.keysWrites, writes, 'and nothing written');
+                assert.strictEqual(fs.existsSync(MAP), false);
+                rk.getRemoteKeys(guard(function (r1) {
+                  assert.strictEqual(r1.volumeBar, false, 'not offered there');
+                  // Where the filter cannot run, the same.
+                  initWith(false, { dir: qmlDir, hashes: hashes });
+                  rk.setVolumeBarStyle('pill', guard(function (refused2) {
+                    assert.strictEqual(refused2.ok, false, 'refused where the JavaScript filter does not run');
+                    initWith(true, { dir: qmlDir, hashes: hashes });
+                    // A pill chosen earlier is not told to the filter once LG's files change under it (a firmware update).
+                    rk.setVolumeBarStyle('pill', guard(function (again) {
+                      assert.ok(again.ok, again.error);
+                      initWith(true, { dir: qmlDir, hashes: other });
+                      rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (k3) {
+                        assert.ok(k3.ok, k3.error);
+                        assert.strictEqual(tv.keys.volume, undefined, 'not told to the filter while the files are not the known ones');
+                        initWith(true, { dir: qmlDir, hashes: hashes });
+                        rk.setVolumeBarStyle('lg', guard(function () {
+                          rk.setRemoteKey('red', 'lg', '', guard(function () {
+                            console.log('  ✓ the volume bar is LG\'s by default, the pill is chosen on a TV whose files are known, kept with or without keys, and dropped where they are not');
+                            Object.keys(files).forEach(function (n) { fs.unlinkSync(path.join(qmlDir, n)); });
+                            fs.rmdirSync(path.join(qmlDir, 'volume'));
+                            fs.rmdirSync(qmlDir);
+                            next();
+                          }));
+                        }));
+                      }));
+                    }));
+                  }));
+                }));
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);

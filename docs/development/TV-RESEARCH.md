@@ -1953,6 +1953,36 @@ bar, with no app window or launch (no `NL_APP_LAUNCH_BEGIN` or `NL_VSC` in
 `/var/log/messages`). The item outlives the filter: configd handing the
 compositor a new chain destroys the loader, not what it made.
 
+## Hiding LG's volume view and reading the audio service from a key filter's item (OLED48C56LB, webOS 10.3.0)
+
+An item the key filter makes with `Qt.createQmlObject` in `views.starfishVolume.parent`
+can `import WebOSCompositorBase 1.0` and use `LS` (`singleton LS 1.0 global/LS.qml` in
+that module's `qmldir`). `LS.audioService` is the `AudioService` LG's volume view
+draws from: `volume`, `volumeMax`, `muted`, `disabled`, `soundOutput`, `cause`,
+`volumeSyncable`, `mode`, `ossActivate`, and the signal `volumeUpdated`. At creation it
+read `volume=18 max=100 muted=false disabled=false out=tv_speaker mode=normal
+cause=volumeDown syncable=true`. A held volume key gave one `volumeUpdated` for each
+step, 50 to 300 ms apart (about 20 a second), each with the new volume and a `cause` of
+`volumeUp` or `volumeDown`. Mute gave two identical events with `muted=true`, an empty
+`cause` and the volume unchanged. The audio service also has a `volumeOsd` property that
+no compositor QML uses.
+
+`opacity = 0` set on `views.starfishVolume` from such an item held for 10 s through 33
+volume steps and a mute: LG's code never sets `opacity` or `visible` on that view's root
+(`BaseView` sets `visible` when it opens and closes, `StarfishVolume` animates only its
+inner `indicator`), the view still opened (`visible` and `isOpen` true) and ran its logic
+underneath, and LG's bar stayed invisible until the opacity was put back to 1. At the
+first volume change after the item was made, the view was still closed when the item's
+handler ran. LG's volume view is declared in `StarfishViewsRoot.qml` after Home,
+Overlay, Popup, Keyboard, Notification, VoiceAgent and Nudge, and before TopUI,
+Indicator, LongPressSpinner, ScreenSaver, ScreenCover, RemoteUserList and
+GestureUIFeedback; no `z` is set, so an item made later is above all of them.
+
+The compositor's QML `console` and PmLog calls (LG's own `VOLUME_UI_SHOWN`
+included) reach none of `/var/log/messages`, the journal or the other files in
+`/var/log`. `XMLHttpRequest` from such an item to the server on `127.0.0.1:8080` works,
+which is a way to read what it sees.
+
 ## Native key filters (C5, webOS 11.2.0)
 
 - **No JavaScript filters.** `surface-manager` runs on Weston

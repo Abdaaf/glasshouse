@@ -27,9 +27,30 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+var crypto = require('crypto');
+var fs = require('fs');
+var path = require('path');
+
 var STYLES = ['lg', 'horizontal', 'vertical', 'none'];
 var BACKLIGHT_IDLE_MS = 30000;
 var STYLE_CACHE_MS = 2000;
+
+/*
+ * The custom volume bar hides LG's and draws its own from what LG's QML does
+ * with the audio service, so it is only used where LG's three volume files are
+ * the ones that behaviour was taken from (OLED48C56LB, webOS 10.3.0, firmware
+ * 33.30.80). A hash is a fact about a file; the files are not in this repository.
+ */
+var VOLUME_QML_DIR = '/usr/lib/qml/WebOSCompositor/views';
+var VOLUME_QML_HASHES = {
+  'StarfishVolumeView.qml': 'e82a5221ae3c27a3940a2f966d8acd79b7b86168bbeaffec3b8075aafc5f03b4',
+  'volume/StarfishVolume.qml': '6b3d2199d7c694bbe8585d95c1eaae96b1da62e2132fbeda65351de73ee87d4d',
+  'volume/StarfishVolumeMute.qml': 'd274aa55eeb0494c283c61df4128f92a5cde0add1ac45ce4ae4f15f80d1bd3b3'
+};
+
+var volumeQmlDir = VOLUME_QML_DIR;
+var volumeHashes = VOLUME_QML_HASHES;
+var volumeFilesCache = null;
 
 var lunaFn = null;
 var SubscriptionCtor = null; // luna.Subscription
@@ -54,6 +75,26 @@ function init(opts) {
   readStyleFn = typeof opts.readStyle === 'function' ? opts.readStyle : function () { return 'lg'; };
   idleMs = typeof opts.idleMs === 'number' ? opts.idleMs : BACKLIGHT_IDLE_MS;
   styleCache.at = 0;
+  volumeQmlDir = opts.volumeQmlDir || VOLUME_QML_DIR;
+  volumeHashes = opts.volumeQmlHashes || VOLUME_QML_HASHES;
+  volumeFilesCache = null;
+}
+
+// Whether LG's volume files on this TV are the known ones. Read once; any file missing or different is false.
+function volumeFilesKnown() {
+  if (volumeFilesCache !== null) return volumeFilesCache;
+  var known = true;
+  Object.keys(volumeHashes).forEach(function (name) {
+    if (!known) return;
+    try {
+      var hash = crypto.createHash('sha256').update(fs.readFileSync(path.join(volumeQmlDir, name))).digest('hex');
+      if (hash !== volumeHashes[name]) known = false;
+    } catch (e) {
+      known = false;
+    }
+  });
+  volumeFilesCache = known;
+  return known;
 }
 
 function isStyle(value) {
@@ -139,6 +180,7 @@ var COMPOSITOR_BAR = 'glasshouseBrightnessBar';
 var COMPOSITOR_BAR_QML = [
   'import QtQuick 2.4',
   'import QtGraphicalEffects 1.0',
+  'import WebOSCompositorBase 1.0',
   'Item {',
   '    id: bar',
   '    objectName: "glasshouseBrightnessBar"',
@@ -151,9 +193,12 @@ var COMPOSITOR_BAR_QML = [
   '    // LG\'s imagePath: its 4k and qhd pictures at exactly 2 and 4/3, the 1080p ones otherwise.',
   '    property string img: "file:///usr/lib/qml/WebOSCompositor/images/" + (Math.abs(s - 2) < 0.000001 ? "4k/" : Math.abs(s - 4 / 3) < 0.000001 ? "qhd/" : "")',
   '    property int level: 0',
+  '    // What this item shows: the level of a Brightness key, or LG\'s volume (the custom volume bar).',
+  '    property string kind: "brightness"',
+  '    property int volumeValue: 0',
   '    // lg: LG\'s own pictures; lgdrawn: the same layout drawn; h and v: the pill, low on the screen and upright at the right edge.',
   '    property string mode: "lg"',
-  '    property string digits: String(level)',
+  '    property string digits: kind === "volume" ? String(volumeValue) : String(level)',
   '    property var digitWidths: [51, 39, 48, 49, 50, 48, 51, 45, 51, 51]',
   '    property var iconMargins: [18, 81, 131, 171]',
   '    property string family: "\\"LG Smart UI\\",\\"LG Smart UI Dingbat\\""',
@@ -165,9 +210,65 @@ var COMPOSITOR_BAR_QML = [
   '                         capBottom.status === Image.Ready && arrowUp.status === Image.Ready && arrowDown.status === Image.Ready',
   '    // LG\'s pictures are used where they all loaded and the compositor\'s volume view is LG\'s: that is where this layout comes from.',
   '    property bool nativeLook: ready && volumeBar !== null',
+  '    // The custom volume bar. LG\'s volume view (lgView, set by the filter) is hidden by opacity 0 while this',
+  '    // draws the volume; LG\'s own logic, timers and spoken feedback keep running under it. Where this does not',
+  '    // draw the output or state, LG\'s view is given back at once.',
+  '    property Item lgView: null',
+  '    property bool volumeOn: false',
+  '    property bool customVolume: false',
+  '    property var plainOutputs: ["tv_speaker", "tv_external_speaker", "tv_speaker_headphone", "lgSoundSync", "external_arc_sc", "external_arc_sound_alive"]',
+  '    property var externalOutputs: ["external_optical", "external_arc", "external_arc_sound_mode_sync", "lineout"]',
+  '    property bool volumeReady: speakerImage.status === Image.Ready && headphoneImage.status === Image.Ready',
+  '    function volumeSupported() {',
+  '        var a = LS.audioService;',
+  '        if (!volumeOn || !volumeReady) return false;',
+  '        if (a.muted || a.disabled || a.mode === "internal" || a.ossActivate) return false;',
+  '        if (volumeBar && volumeBar.partialViewState) return false;',
+  '        var o = a.soundOutput;',
+  '        if (plainOutputs.indexOf(o) >= 0 || o === "headphone") return true;',
+  '        return externalOutputs.indexOf(o) >= 0 && a.volumeSyncable;',
+  '    }',
+  '    function syncVolume() {',
+  '        customVolume = volumeSupported();',
+  '        if (lgView && volumeOn) lgView.opacity = customVolume ? 0 : 1;',
+  '        if (!customVolume && kind === "volume") { hold.stop(); fade.stop(); opacity = 0; }',
+  '    }',
+  '    function showVolume() {',
+  '        syncVolume();',
+  '        // LG\'s view says it is not available where the volume OSD is switched off, hotel mode and twin TVs: nothing is drawn then either.',
+  '        if (!customVolume || (lgView && lgView.available === false)) return;',
+  '        kind = "volume";',
+  '        mode = "v";',
+  '        volumeValue = LS.audioService.volume;',
+  '        var max = LS.audioService.volumeMax;',
+  '        level = Math.max(0, Math.min(100, Math.round(max > 0 ? volumeValue * 100 / max : volumeValue)));',
+  '        fade.stop();',
+  '        opacity = 1;',
+  '        hold.restart();',
+  '    }',
+  '    onVolumeOnChanged: {',
+  '        if (volumeOn) {',
+  '            syncVolume();',
+  '        } else {',
+  '            customVolume = false;',
+  '            if (lgView) lgView.opacity = 1;',
+  '            if (kind === "volume") { hold.stop(); fade.stop(); opacity = 0; }',
+  '        }',
+  '    }',
+  '    Component.onDestruction: { if (lgView && customVolume) lgView.opacity = 1; }',
+  '    Connections {',
+  '        target: LS.audioService',
+  '        ignoreUnknownSignals: true',
+  '        onVolumeUpdated: if (bar.volumeOn) bar.showVolume()',
+  '        onSoundOutputChanged: if (bar.volumeOn) bar.syncVolume()',
+  '        onMutedChanged: if (bar.volumeOn) bar.syncVolume()',
+  '        onDisabledChanged: if (bar.volumeOn) bar.syncVolume()',
+  '        onModeChanged: if (bar.volumeOn) bar.syncVolume()',
+  '    }',
   '    // The pill low on the screen does not meet LG\'s volume bar; the other looks are at its place.',
   '    property bool rightEdge: mode !== "h"',
   '    function show(value, style) {',
+  '        kind = "brightness";',
   '        mode = style === "horizontal" ? "h" : style === "vertical" ? "v" : (nativeLook ? "lg" : "lgdrawn");',
   '        level = Math.max(0, Math.min(100, Math.round(value)));',
   '        fade.stop();',
@@ -181,13 +282,14 @@ var COMPOSITOR_BAR_QML = [
   '    // three quarters for a moment, so this one stays until LG\'s has faded in',
   '    // underneath (opened), then fades out over it.',
   '    function giveWay(done) {',
-  '        if (!rightEdge) return;',
+  '        // LG\'s bar is invisible while the custom volume bar draws, so there is nothing to give way to.',
+  '        if (!rightEdge || customVolume) return;',
   '        hold.stop();',
   '        if (done && opacity > 0) fade.start();',
   '    }',
   '    Connections { target: bar.volumeBar; ignoreUnknownSignals: true; onOpening: bar.giveWay(false); onOpened: bar.giveWay(true) }',
   '    Connections { target: bar.volumeMute; ignoreUnknownSignals: true; onOpening: bar.giveWay(false); onOpened: bar.giveWay(true) }',
-  '    Timer { id: hold; interval: bar.mode === "h" || bar.mode === "v" ? 1600 : 1500; onTriggered: fade.start() }',
+  '    Timer { id: hold; interval: bar.kind === "volume" ? 1500 : (bar.mode === "h" || bar.mode === "v" ? 1600 : 1500); onTriggered: fade.start() }',
   '    NumberAnimation { id: fade; target: bar; property: "opacity"; to: 0; duration: 150 }',
   '    Text { id: widest; visible: false; text: "000"; font.family: bar.family; font.pixelSize: 36 * bar.s; font.weight: Font.Medium }',
   '',
@@ -343,7 +445,26 @@ var COMPOSITOR_BAR_QML = [
   '        x: horizontal ? (bar.width - width) / 2 : bar.width - width - 60 * bar.s',
   '        y: horizontal ? bar.height - height - 80 * bar.s : (bar.height - height) / 2',
   '        Rectangle { anchors.fill: parent; radius: 40 * bar.s; color: "#F0222224" }',
+  '        Image {',
+  '            id: speakerImage',
+  '            source: bar.img + "ic_speaker.png"',
+  '            visible: bar.kind === "volume" && LS.audioService.soundOutput !== "headphone"',
+  '            width: 60 * bar.s',
+  '            height: width',
+  '            x: (pill.width - width) / 2',
+  '            y: pill.pad + (pill.ico - height) / 2',
+  '        }',
+  '        Image {',
+  '            id: headphoneImage',
+  '            source: bar.img + "ic_headphone.png"',
+  '            visible: bar.kind === "volume" && LS.audioService.soundOutput === "headphone"',
+  '            width: 60 * bar.s',
+  '            height: width',
+  '            x: (pill.width - width) / 2',
+  '            y: pill.pad + (pill.ico - height) / 2',
+  '        }',
   '        Item {',
+  '            visible: bar.kind !== "volume"',
   '            width: pill.ico',
   '            height: width',
   '            x: pill.horizontal ? pill.pad : (pill.width - width) / 2',
@@ -413,8 +534,10 @@ function filterConfig() {
   return [
     '        glasshouseOsd = value.osd === true;',
     '        glasshouseOsdStyle = value.osdStyle === "horizontal" || value.osdStyle === "vertical" ? value.osdStyle : "lg";',
-    '        if (glasshouseOsd) glasshouseCompositorBar();',
-    '        else glasshouseDropBar();'
+    '        glasshouseVolumeCustom = value.volume === "pill";',
+    '        if (glasshouseOsd || glasshouseVolumeCustom) glasshouseCompositorBar();',
+    '        else glasshouseDropBar();',
+    '        if (glasshouseOsdBar) glasshouseOsdBar.volumeOn = glasshouseVolumeCustom;'
   ].join('\n');
 }
 
@@ -423,6 +546,8 @@ function filterShow(inputBarId) {
     'var glasshouseOsd = false;',
     'var glasshouseOsdStyle = "lg";',
     'var glasshouseOsdPress = 0;',
+    // The custom volume bar is switched on (volume in the configd value): LG's volume bar is drawn over by the item.
+    'var glasshouseVolumeCustom = false;',
     // The compositor's bar: null until tried, false where it cannot be made.
     'var glasshouseOsdBar = null;',
     // views is the compositor's key-filter item's own property, reached by
@@ -441,7 +566,10 @@ function filterShow(inputBarId) {
     '            if (kids[i] && kids[i].objectName === ' + JSON.stringify(COMPOSITOR_BAR) + ') kids[i].destroy();',
     '        }',
     '        glasshouseOsdBar = Qt.createQmlObject(' + JSON.stringify(COMPOSITOR_BAR_QML) + ', host, ' + JSON.stringify(COMPOSITOR_BAR) + ') || false;',
-    '        if (glasshouseOsdBar) glasshouseVolumeViews(glasshouseOsdBar, views.starfishVolume);',
+    '        if (glasshouseOsdBar) {',
+    '            glasshouseVolumeViews(glasshouseOsdBar, views.starfishVolume);',
+    '            glasshouseOsdBar.lgView = views.starfishVolume;',
+    '        }',
     '    } catch (e) {',
     '        glasshouseOsdBar = false;',
     '        console.warn("glasshouse keyfilter: " + e + "; the brightness bar opens as an app");',
@@ -485,6 +613,8 @@ module.exports = {
   stop: stop,
   getBrightness: getBrightness,
   forgetStyle: forgetStyle,
+  volumeFilesKnown: volumeFilesKnown,
+  VOLUME_QML_HASHES: VOLUME_QML_HASHES,
   isStyle: isStyle,
   filterConfig: filterConfig,
   filterShow: filterShow,

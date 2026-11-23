@@ -2724,6 +2724,11 @@ function handleRequest(req, res) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
         });
       }
+      if (body && body.volumeBarStyle !== undefined) {
+        return remoteKeysModule.setVolumeBarStyle(body.volumeBarStyle, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
       if (body && body.brightnessBarStyle !== undefined) {
         return remoteKeysModule.setBrightnessBarStyle(body.brightnessBarStyle, function (r) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
