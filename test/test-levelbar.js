@@ -255,14 +255,39 @@ step('the custom volume bar is only used where LG\'s volume files are the known 
   done();
 });
 
-step('the QML hands LG\'s volume bar back for what it does not draw, and gives it back when it is taken off', function (done) {
+step('the QML draws the volume for each output and state it knows, and leaves the rest to LG\'s bar', function (done) {
   var qml = levelBar.COMPOSITOR_BAR_QML;
   assert.ok(/import WebOSCompositorBase 1\.0/.test(qml), 'LS comes from the compositor\'s base module');
-  assert.ok(/if \(a\.muted \|\| a\.disabled \|\| a\.mode === "internal" \|\| a\.ossActivate\) return false;/.test(qml), 'mute, disabled, internal mode and the other outputs are left to LG');
-  assert.ok(/if \(volumeBar && volumeBar\.partialViewState\) return false;/.test(qml), 'so is partial view');
+  assert.ok(/if \(a\.mode === "internal"\) return null;/.test(qml), 'internal mode, where LG draws nothing, is left to LG');
+  assert.ok(/if \(volumeBar && volumeBar\.partialViewState\) return null;/.test(qml), 'so is partial view');
   assert.ok(/lgView\.available === false/.test(qml), 'nothing is drawn where LG\'s view is not available (volume OSD off)');
+  // Mute: the mute icon replaces the output's icon at the top of the bar, the level stays.
+  assert.ok(/if \(a\.muted\) return \{ layout: hasLevel \? "level" : "icon", file: "ic_volume_mute\.png" \};/.test(qml), 'muted: the mute icon, with the level where there is one');
+  assert.ok(/if \(a\.disabled\) return \{ layout: "icon", file: "volume_disabled\.png" \};/.test(qml), 'disabled: LG\'s disabled picture alone');
+  // Outputs: LG's own icons, and arrows where the TV does not know the volume.
+  var icons = {
+    headphone: 'ic_headphone.png', bt_soundbar: 'ic_bluetooth.png', bt_atmos: 'ic_bluetooth.png',
+    tv_speaker_bluetooth: 'ic_bluetoothsorround.png', tv_speaker_bt_surround: 'ic_bluetoothsorround.png',
+    wisa_speaker: 'ic_wisa.png', wow_cast: 'volume_wowcast.png', tv_speaker_wow_cast: 'volume_wowcast.png',
+    flex_connector: 'ic_wifi_dolbyatmos.png'
+  };
+  Object.keys(icons).forEach(function (o) {
+    assert.ok(qml.indexOf('"' + o + '": "' + icons[o] + '"') !== -1, o + ' has LG\'s icon ' + icons[o]);
+  });
+  ['external_optical', 'external_arc', 'external_arc_sound_mode_sync', 'lineout', 'urcu_oss', 'tv_speaker_external_arc_harmony', 'wow_cast', 'tv_speaker_wow_cast'].forEach(function (o) {
+    assert.ok(qml.indexOf('"' + o + '"') !== -1, o + ' is one of LG\'s exterior outputs');
+  });
+  assert.ok(/var hasLevel = !exterior \|\| a\.volumeSyncable;/.test(qml), 'an exterior output the TV cannot set has no level');
+  assert.ok(/layout: hasLevel \? "level" : "arrows"/.test(qml), 'and gets LG\'s arrows');
+  // Pictures: the one the look needs must have loaded, or LG's bar is left to draw it.
+  assert.ok(/if \(volIcon\.status !== Image\.Ready\) return false;/.test(qml), 'the icon must have loaded');
+  assert.ok(/if \(look\.layout === "arrows" && !arrowsReady\) return false;/.test(qml), 'and the arrows, for that look');
+  // Giving LG's bar back.
   assert.ok(/Component\.onDestruction: \{ if \(lgView && customVolume\) lgView\.opacity = 1; \}/.test(qml), 'LG\'s bar is given back when the item is destroyed');
   assert.ok(/if \(!rightEdge \|\| customVolume\) return;/.test(qml), 'nothing gives way to a bar that is hidden');
+  assert.ok(/onTriggered: \{ fade\.start\(\); bar\.releaseIfMuted\(\); \}/.test(qml), 'after the pill\'s time ...');
+  assert.ok(/if \(volumeOn && customVolume && kind === "volume" && volumeMuted\) \{\s+lgReleased = true;\s+if \(lgView\) lgView\.opacity = 1;/.test(qml), '... a muted TV is left to LG\'s own mute icon');
+  assert.ok(/function showVolume\(\) \{\s+lgReleased = false;/.test(qml), 'and the next volume change takes the place again');
   done();
 });
 
